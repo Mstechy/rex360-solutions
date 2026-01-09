@@ -10,7 +10,7 @@ import NewsPage from './pages/NewsPage';
 
 // --- SECTIONS ---
 import HeroSlider from './components/HeroSlider';
-import AgentIntro from './components/Agentintro'; // Ensure filename matches exactly
+import AgentIntro from './components/AgentIntroTEMP'; // Ensure filename matches exactly
 import ServicesSection from './components/ServicesSection';
 import NewsSection from './components/NewsSection';
 import FAQ from './components/FAQ';
