@@ -1,0 +1,320 @@
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { usePaystackPayment } from 'react-paystack';
+import { Upload, CheckCircle, MessageCircle, ArrowRight, FileText, User } from 'lucide-react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+
+const Registration = () => {
+  const { selectedService } = useParams();
+  const [serviceType, setServiceType] = useState('Business Name');
+  const [step, setStep] = useState('form');
+
+  const prices = {
+    'Business Name': 35000,
+    'Company Name': 80000,
+    'NGO Registration': 140000,
+    'Trademark': 50000,
+    'Export Licence': 60000,
+    'Copyright': 70000,
+    'Annual Returns': 20000
+  };
+
+  useEffect(() => {
+    if (selectedService && prices[selectedService]) setServiceType(selectedService);
+  }, [selectedService]);
+
+  // --- PDF GENERATION LOGIC ---
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    const getValue = (id) => document.getElementById(id)?.value || 'N/A';
+
+    // 1. Header
+    doc.setFontSize(22);
+    doc.setTextColor(30, 58, 138); // CAC Blue
+    doc.text("REX360 SOLUTIONS - INTAKE FORM", 14, 20);
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Service: ${serviceType} | Date: ${new Date().toLocaleDateString()}`, 14, 26);
+    doc.line(14, 30, 196, 30);
+
+    // 2. Core Personal Data (All Services)
+    let bodyData = [
+      ['Surname', getValue('surname')],
+      ['First Name', getValue('firstname')],
+      ['Other Name', getValue('othername')],
+      ['Date of Birth', getValue('dob')],
+      ['Gender', getValue('gender')],
+      ['Phone', getValue('phone')],
+      ['Email', getValue('email')],
+      ['NIN', getValue('nin')],
+      ['Home Address', `${getValue('h-street')}, ${getValue('h-lga')}, ${getValue('h-state')}`],
+    ];
+
+    // 3. Service Specific Data Injection
+    if (serviceType === 'Business Name') {
+      bodyData.push(
+        ['---', '--- BUSINESS DETAILS ---'],
+        ['Business Name 1', getValue('bn-name1')],
+        ['Business Name 2', getValue('bn-name2')],
+        ['Business Address', `${getValue('b-street')}, ${getValue('b-lga')}, ${getValue('b-state')}`],
+        ['Nature of Business', getValue('bn-nature')],
+        ['Description', getValue('bn-desc')]
+      );
+    } else if (serviceType === 'Company Name') {
+      bodyData.push(
+        ['---', '--- COMPANY DETAILS ---'],
+        ['Proposed Name 1', getValue('cmp-name1')],
+        ['Proposed Name 2', getValue('cmp-name2')],
+        ['Company Email', getValue('cmp-email')],
+        ['Company Address', `${getValue('b-street')}, ${getValue('b-lga')}, ${getValue('b-state')}`],
+        ['Object 1', getValue('cmp-obj1')],
+        ['Object 2', getValue('cmp-obj2')],
+        ['---', '--- WITNESS DETAILS ---'],
+        ['Witness Name', `${getValue('wit-surname')} ${getValue('wit-firstname')}`],
+        ['Witness Phone', getValue('wit-phone')],
+        ['Witness NIN', getValue('wit-nin')],
+        ['Witness Address', `${getValue('wit-street')}, ${getValue('wit-lga')}, ${getValue('wit-state')}`]
+      );
+    } else if (serviceType === 'NGO Registration') {
+      bodyData.push(
+        ['---', '--- NGO TRUSTEES ---'],
+        ['Chairman', `${getValue('ngo-chair-name')} (NIN: ${getValue('ngo-chair-nin')})`],
+        ['Secretary', `${getValue('ngo-sec-name')} (NIN: ${getValue('ngo-sec-nin')})`],
+        ['Trustee 1', `${getValue('ngo-tr1-name')} (NIN: ${getValue('ngo-tr1-nin')})`],
+        ['Tenure', getValue('ngo-tenure')],
+        ['NGO Address', getValue('ngo-address')],
+        ['Aims & Obj 1', getValue('ngo-aim1')],
+        ['Aims & Obj 2', getValue('ngo-aim2')],
+        ['Proposed Name 1', getValue('ngo-name1')]
+      );
+    } else if (serviceType === 'Export Licence') {
+       bodyData.push(
+        ['RC Number', getValue('exp-rc')],
+        ['Tax ID (TIN)', getValue('exp-tin')],
+        ['Bank Details', getValue('exp-bank')]
+       );
+    }
+
+    // 4. Create Table
+    doc.autoTable({
+      startY: 35,
+      head: [['Field', 'Details']],
+      body: bodyData,
+      theme: 'grid',
+      headStyles: { fillColor: [0, 135, 81] }, // CAC Green
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } }
+    });
+
+    doc.save(`REX360_${serviceType}_${getValue('surname')}.pdf`);
+  };
+
+  // --- PAYSTACK LOGIC ---
+  const config = {
+    reference: (new Date()).getTime().toString(),
+    email: "info@rex360solutions.com",
+    amount: prices[serviceType] * 100,
+    publicKey: 'pk_test_your_public_key_here', // Replace with real key
+  };
+
+  const initializePayment = usePaystackPayment(config);
+
+  const handleProcess = (e) => {
+    e.preventDefault();
+    initializePayment(() => {
+        generatePDF();
+        setStep('success');
+    }, () => alert("Payment Cancelled"));
+  };
+
+  if (step === 'success') {
+    return (
+      <div className="pt-40 pb-20 px-8 text-center bg-white min-h-screen animate-fadeIn">
+        <CheckCircle size={80} className="text-cac-green mx-auto mb-6" />
+        <h1 className="text-4xl font-black text-cac-blue mb-4 uppercase">Submission Successful!</h1>
+        <p className="text-slate-600 mb-8 max-w-md mx-auto">PDF Generated. Chat with Doris to finish.</p>
+        <a href="https://wa.me/2349048349548" className="inline-flex items-center bg-[#25D366] text-white px-10 py-5 rounded-full font-black text-xl shadow-xl hover:scale-105 transition-transform">
+          <MessageCircle className="mr-2" /> CHAT ON WHATSAPP
+        </a>
+      </div>
+    );
+  }
+
+  // --- RENDER FORM FIELDS ---
+  const renderFields = () => {
+    switch(serviceType) {
+      case 'Business Name':
+        return (
+          <div className="space-y-6 p-6 bg-slate-50 rounded-3xl border border-slate-200">
+             <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest">Business Details</h3>
+             <div className="grid md:grid-cols-2 gap-4">
+                <input id="bn-name1" placeholder="Proposed Name 1" className="p-4 rounded-xl border-none font-bold" required />
+                <input id="bn-name2" placeholder="Proposed Name 2" className="p-4 rounded-xl border-none font-bold" required />
+                <div className="md:col-span-2 space-y-2">
+                   <label className="text-[10px] font-black uppercase text-slate-400">Business Address</label>
+                   <div className="grid grid-cols-3 gap-2">
+                      <input id="b-state" placeholder="State" className="p-3 rounded-lg border-none" />
+                      <input id="b-lga" placeholder="LGA" className="p-3 rounded-lg border-none" />
+                      <input id="b-street" placeholder="Street/No" className="p-3 rounded-lg border-none" />
+                   </div>
+                </div>
+                <input id="bn-nature" placeholder="Nature of Business" className="p-4 rounded-xl border-none font-bold md:col-span-2" required />
+                <textarea id="bn-desc" placeholder="Full Description of Services" className="p-4 rounded-xl border-none font-bold md:col-span-2 h-24" required />
+             </div>
+          </div>
+        );
+      case 'Company Name':
+        return (
+          <div className="space-y-6 p-6 bg-slate-50 rounded-3xl border border-slate-200">
+             <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest">Company & Witness Info</h3>
+             <div className="grid md:grid-cols-2 gap-4">
+                <input id="cmp-name1" placeholder="Company Name 1" className="p-4 rounded-xl border-none font-bold" required />
+                <input id="cmp-name2" placeholder="Company Name 2" className="p-4 rounded-xl border-none font-bold" required />
+                <input id="cmp-email" placeholder="Company Email" className="p-4 rounded-xl border-none font-bold" required />
+                
+                {/* Company Address */}
+                <div className="md:col-span-2 space-y-2">
+                   <label className="text-[10px] font-black uppercase text-slate-400">Company Address</label>
+                   <div className="grid grid-cols-3 gap-2">
+                      <input id="b-state" placeholder="State" className="p-3 rounded-lg border-none" />
+                      <input id="b-lga" placeholder="LGA" className="p-3 rounded-lg border-none" />
+                      <input id="b-street" placeholder="Street/No" className="p-3 rounded-lg border-none" />
+                   </div>
+                </div>
+
+                {/* Objects */}
+                <div className="md:col-span-2 space-y-2">
+                   <label className="text-[10px] font-black uppercase text-slate-400">Object of Memorandum</label>
+                   <input id="cmp-obj1" placeholder="1. e.g., Sales of Hardware" className="w-full p-3 rounded-lg border-none mb-2" />
+                   <input id="cmp-obj2" placeholder="2. e.g., Maintenance" className="w-full p-3 rounded-lg border-none" />
+                </div>
+
+                {/* Witness Section */}
+                <div className="md:col-span-2 p-4 bg-white rounded-xl border border-blue-100">
+                    <p className="text-xs font-black text-cac-blue mb-3 uppercase">Witness Details</p>
+                    <div className="grid md:grid-cols-2 gap-3">
+                      <input id="wit-surname" placeholder="Surname" className="p-3 bg-slate-50 rounded-lg" />
+                      <input id="wit-firstname" placeholder="First Name" className="p-3 bg-slate-50 rounded-lg" />
+                      <input id="wit-phone" placeholder="Phone" className="p-3 bg-slate-50 rounded-lg" />
+                      <input id="wit-nin" placeholder="NIN" className="p-3 bg-slate-50 rounded-lg" />
+                      <input id="wit-state" placeholder="State" className="p-3 bg-slate-50 rounded-lg" />
+                      <input id="wit-street" placeholder="Street Address" className="p-3 bg-slate-50 rounded-lg" />
+                    </div>
+                </div>
+             </div>
+          </div>
+        );
+      case 'NGO Registration':
+        return (
+          <div className="space-y-6 p-6 bg-slate-50 rounded-3xl border border-slate-200">
+             <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest">Trustees & Aims</h3>
+             <div className="grid gap-4">
+                <input id="ngo-name1" placeholder="Proposed NGO Name 1" className="p-4 rounded-xl border-none font-bold" />
+                
+                {/* Trustees Loop Visual */}
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="p-4 bg-white rounded-xl">
+                    <p className="text-[10px] font-black mb-2">CHAIRMAN</p>
+                    <input id="ngo-chair-name" placeholder="Full Name" className="w-full p-2 mb-2 bg-slate-50 rounded" />
+                    <input id="ngo-chair-nin" placeholder="NIN" className="w-full p-2 bg-slate-50 rounded" />
+                  </div>
+                  <div className="p-4 bg-white rounded-xl">
+                    <p className="text-[10px] font-black mb-2">SECRETARY</p>
+                    <input id="ngo-sec-name" placeholder="Full Name" className="w-full p-2 mb-2 bg-slate-50 rounded" />
+                    <input id="ngo-sec-nin" placeholder="NIN" className="w-full p-2 bg-slate-50 rounded" />
+                  </div>
+                </div>
+
+                <input id="ngo-tr1-name" placeholder="Trustee 1 Full Name" className="p-4 rounded-xl border-none font-bold" />
+                <input id="ngo-tr1-nin" placeholder="Trustee 1 NIN" className="p-4 rounded-xl border-none font-bold" />
+                
+                <input id="ngo-tenure" placeholder="Trustees Tenure (e.g. 20 Years)" className="p-4 rounded-xl border-none font-bold" />
+                <input id="ngo-address" placeholder="NGO Full Address" className="p-4 rounded-xl border-none font-bold" />
+                
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black uppercase text-slate-400">Aims & Objectives</label>
+                   <input id="ngo-aim1" placeholder="1. Aim..." className="w-full p-3 rounded-lg border-none mb-2" />
+                   <input id="ngo-aim2" placeholder="2. Aim..." className="w-full p-3 rounded-lg border-none" />
+                </div>
+             </div>
+          </div>
+        );
+      case 'Export Licence':
+        return (
+          <div className="space-y-6 p-6 bg-slate-50 rounded-3xl border border-slate-200">
+             <div className="grid gap-4">
+                <input id="exp-rc" placeholder="RC Number" className="p-4 rounded-xl border-none font-bold" />
+                <input id="exp-tin" placeholder="Tax Identification Number (TIN)" className="p-4 rounded-xl border-none font-bold" />
+                <input id="exp-bank" placeholder="Corporate Bank Account Details" className="p-4 rounded-xl border-none font-bold" />
+             </div>
+          </div>
+        );
+      default: return null;
+    }
+  };
+
+  return (
+    <div className="pt-32 pb-20 px-4 min-h-screen bg-slate-50">
+      <div className="max-w-4xl mx-auto bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100">
+        <div className="bg-cac-blue p-8 text-white flex justify-between items-center">
+          <div>
+             <h1 className="text-2xl font-black uppercase italic tracking-tighter">{serviceType}</h1>
+             <p className="text-xs text-blue-200 font-bold uppercase">Official CAC Form</p>
+          </div>
+          <div className="text-right">
+             <span className="block text-[10px] opacity-60 font-black">Fee</span>
+             <span className="text-2xl font-black text-cac-green">₦{prices[serviceType].toLocaleString()}</span>
+          </div>
+        </div>
+
+        <form onSubmit={handleProcess} className="p-8 md:p-12 space-y-8">
+          
+          {/* 1. PERSONAL DETAILS (COMMON) */}
+          <div className="space-y-4">
+            <h3 className="text-xs font-black text-cac-blue uppercase tracking-widest border-l-4 border-cac-green pl-3">Personal Information</h3>
+            <div className="grid md:grid-cols-3 gap-4">
+               <input id="surname" placeholder="Surname" className="p-4 bg-slate-50 rounded-xl font-bold" required />
+               <input id="firstname" placeholder="First Name" className="p-4 bg-slate-50 rounded-xl font-bold" required />
+               <input id="othername" placeholder="Other Name" className="p-4 bg-slate-50 rounded-xl font-bold" />
+               <input id="dob" type="date" className="p-4 bg-slate-50 rounded-xl font-bold" required />
+               <select id="gender" className="p-4 bg-slate-50 rounded-xl font-bold"><option>Male</option><option>Female</option></select>
+               <input id="phone" placeholder="Phone" className="p-4 bg-slate-50 rounded-xl font-bold" required />
+               <input id="email" type="email" placeholder="Personal Email" className="p-4 bg-slate-50 rounded-xl font-bold md:col-span-2" required />
+               <input id="nin" placeholder="NIN" className="p-4 bg-slate-50 rounded-xl font-bold" required />
+            </div>
+            
+            {/* Residential Address */}
+            <div className="bg-slate-50 p-4 rounded-xl space-y-2">
+               <label className="text-[10px] font-black uppercase text-slate-400">Residential Address</label>
+               <div className="grid grid-cols-3 gap-2">
+                  <input id="h-state" placeholder="State" className="p-3 bg-white rounded-lg" />
+                  <input id="h-lga" placeholder="LGA" className="p-3 bg-white rounded-lg" />
+                  <input id="h-street" placeholder="Street/No" className="p-3 bg-white rounded-lg" />
+               </div>
+            </div>
+          </div>
+
+          {/* 2. DYNAMIC SERVICE FIELDS */}
+          {renderFields()}
+
+          {/* 3. DOCUMENT UPLOADS */}
+          <div className="grid md:grid-cols-3 gap-4 pt-4 border-t">
+             {['ID Card', 'Signature', 'Passport'].map(doc => (
+               <label key={doc} className="flex flex-col items-center p-6 border-2 border-dashed border-slate-200 rounded-xl hover:border-cac-green cursor-pointer">
+                  <Upload className="text-slate-300 mb-2" />
+                  <span className="text-[10px] font-black text-slate-500">{doc}</span>
+                  <input type="file" className="hidden" required />
+               </label>
+             ))}
+          </div>
+
+          <button type="submit" className="w-full bg-cac-green text-white py-6 rounded-2xl font-black text-xl shadow-xl hover:bg-cac-blue transition-all flex items-center justify-center gap-4">
+             PROCEED TO PAYMENT <ArrowRight />
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default Registration;

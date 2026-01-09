@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+html {
+  scroll-behavior: smooth;
+}
+@layer components {
+  /* Blinking Tape Light Effect for Agent Accreditation */
+  .blinking-border {
+    @apply relative border-4 border-transparent bg-clip-padding rounded-2xl;
+  }
+  
+  .blinking-border::before {
+    content: '';
+    @apply absolute -inset-1 rounded-2xl opacity-75;
+    /* REX360 Colors: CAC Green and CAC Blue */
+    background: linear-gradient(90deg, #008751, #1e3a8a, #008751);
+    animation: pulse-border 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    z-index: -1;
+  }
+
+  /* Dynamic pop-out effect for service cards */
+  .service-card-pop {
+    @apply transition-all duration-500 hover:-translate-y-4 hover:shadow-2xl hover:border-cac-green;
+    animation: slideInUp 0.8s ease-out forwards;
+    opacity: 0;
+  }
+}
+
+/* Custom Animations */
+@keyframes pulse-border {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(1.02); }
+}
+
+@keyframes slideInUp {
+  0% { transform: translateY(40px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+body {
+  @apply bg-white text-slate-900 overflow-x-hidden;
+  scroll-behavior: smooth;
+}
