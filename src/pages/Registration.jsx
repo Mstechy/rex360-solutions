@@ -142,15 +142,93 @@ const Registration = () => {
     doc.save(`REX360_${serviceType}_${getValue('surname')}.pdf`);
   };
 
+  /// --- DATABASE SAVING LOGIC (COMPLETE VERSION) ---
+  const saveToDatabase = async (reference) => {
+    const getValue = (id) => document.getElementById(id)?.value || '';
+
+    // 1. Gather ALL data (Common + Service Specific)
+    const formData = {
+      // --- Personal Info ---
+      surname: getValue('surname'),
+      firstname: getValue('firstname'),
+      othername: getValue('othername'),
+      gender: getValue('gender'),
+      dob: getValue('dob'),
+      phone: getValue('phone'),
+      email: getValue('email'),
+      nin: getValue('nin'),
+      residential_address: `${getValue('h-street')}, ${getValue('h-lga')}, ${getValue('h-state')}`,
+
+      // --- Business Name Fields ---
+      business_name_1: getValue('bn-name1'),
+      business_name_2: getValue('bn-name2'),
+      business_nature: getValue('bn-nature'),
+      business_description: getValue('bn-desc'),
+      business_address: `${getValue('b-street')}, ${getValue('b-lga')}, ${getValue('b-state')}`,
+
+      // --- Company Fields ---
+      company_name_1: getValue('cmp-name1'),
+      company_name_2: getValue('cmp-name2'),
+      company_email: getValue('cmp-email'),
+      company_object_1: getValue('cmp-obj1'),
+      company_object_2: getValue('cmp-obj2'),
+      
+      // --- Witness Info (For Company) ---
+      witness_name: `${getValue('wit-surname')} ${getValue('wit-firstname')}`,
+      witness_phone: getValue('wit-phone'),
+      witness_nin: getValue('wit-nin'),
+      witness_address: `${getValue('wit-street')}, ${getValue('wit-lga')}, ${getValue('wit-state')}`,
+
+      // --- NGO Fields ---
+      ngo_name: getValue('ngo-name1'),
+      ngo_chairman: `${getValue('ngo-chair-name')} (NIN: ${getValue('ngo-chair-nin')})`,
+      ngo_secretary: `${getValue('ngo-sec-name')} (NIN: ${getValue('ngo-sec-nin')})`,
+      ngo_trustee_1: `${getValue('ngo-tr1-name')} (NIN: ${getValue('ngo-tr1-nin')})`,
+      ngo_tenure: getValue('ngo-tenure'),
+      ngo_address: getValue('ngo-address'),
+      ngo_aims: `${getValue('ngo-aim1')}, ${getValue('ngo-aim2')}`,
+
+      // --- Trademark Fields ---
+      trademark_name: getValue('tm-name'),
+      trademark_class: getValue('tm-class'),
+      trademark_owner_company: getValue('tm-company'),
+      trademark_address: `${getValue('tm-street')}, ${getValue('tm-lga')}, ${getValue('tm-state')}`,
+
+      // --- Export Licence Fields ---
+      export_rc_number: getValue('exp-rc'),
+      export_tin: getValue('exp-tin'),
+      export_bank_details: getValue('exp-bank'),
+    };
+
+    // Remove empty fields to keep the database clean
+    const cleanData = Object.fromEntries(Object.entries(formData).filter(([_, v]) => v !== '' && v !== 'N/A, N/A, N/A'));
+
+    // 2. Send to Supabase
+    const { error } = await supabase
+      .from('registrations')
+      .insert([
+        { 
+          service_type: serviceType,
+          surname: formData.surname,
+          firstname: formData.firstname,
+          phone: formData.phone,
+          email: formData.email,
+          amount: currentPrice,
+          paystack_ref: reference,
+          full_details: cleanData // <--- Saves ALL the fields above
+        }
+      ]);
+
+    if (error) console.error('Error saving registration:', error);
+  };
   // --- PAYSTACK LOGIC ---
-  // Calculates price dynamically based on DB fetch
   const currentPrice = prices[serviceType] || 0; 
   
   const config = {
     reference: (new Date()).getTime().toString(),
-    email: "rex360solutions@gmail.com", // Make sure this is your business email
+    email: "rex360solutions@gmail.com",
     amount: currentPrice * 100, // Converts Naira to Kobo
-    // 👇 THIS IS YOUR REAL LIVE KEY
+    // 👇 YOUR LIVE KEY
     publicKey: 'pk_live_08ddf326f45872fd52bbaafda8e14863b37bd00b',
   };
 
@@ -162,12 +240,24 @@ const Registration = () => {
         alert("Price is loading or invalid. Please refresh.");
         return;
     }
-    initializePayment(() => {
+    
+    // Trigger Paystack
+    initializePayment(
+      // 1. Success Callback
+      (response) => {
+        // A. Save to Database (So you see the order)
+        saveToDatabase(response.reference);
+        
+        // B. Generate PDF (For the customer)
         generatePDF();
+        
+        // C. Show Success Screen
         setStep('success');
-    }, () => alert("Payment Cancelled"));
+      },
+      // 2. Close/Cancel Callback
+      () => alert("Payment Cancelled")
+    );
   };
-
   if (loading) {
     return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50">
