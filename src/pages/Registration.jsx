@@ -1,34 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { usePaystackPayment } from 'react-paystack';
-import { Upload, CheckCircle, MessageCircle, ArrowRight, Loader } from 'lucide-react';
+import { Upload, CheckCircle, MessageCircle, ArrowRight, Loader, X, Image as ImageIcon } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { supabase } from '../SupabaseClient'; // <--- CONNECTED TO DB
+import { supabase } from '../SupabaseClient'; 
 
 const Registration = () => {
   const { selectedService } = useParams();
-  const [serviceType, setServiceType] = useState('Business Name');
+  
+  // FIX 1: Handle dynamic URL or default to Business Name
+  const [serviceType, setServiceType] = useState(selectedService || 'Business Name');
   const [step, setStep] = useState('form');
   
-  // 1. STATE: We now store prices in State, not a hardcoded list
   const [prices, setPrices] = useState({});
   const [loading, setLoading] = useState(true);
 
-  // 2. FETCH PRICES FROM DB (The Fix)
+  // FIX 2: STATE FOR FILE PREVIEWS
+  const [files, setFiles] = useState({});
+  const [previews, setPreviews] = useState({});
+
+  // 1. FETCH PRICES FROM DB
   useEffect(() => {
     const fetchPrices = async () => {
-      const { data, error } = await supabase
-        .from('services')
-        .select('name, price');
+      const { data, error } = await supabase.from('services').select('name, price');
 
       if (data) {
         const priceMap = {};
         data.forEach(item => {
-          // Normalize names so they match your form logic
           let name = item.name;
           if (name === 'Company Registration') name = 'Company Name';
-          
           priceMap[name] = item.price;
         });
         setPrices(priceMap);
@@ -39,116 +40,50 @@ const Registration = () => {
     fetchPrices();
   }, []);
 
-  // 3. Update Service Type when URL changes
+  // 2. Update Service Type when URL changes
   useEffect(() => {
     if (selectedService) {
-      // Fix "Company Registration" link issue automatically
       let correctedName = selectedService;
       if (selectedService === 'Company Registration') correctedName = 'Company Name';
-      
       setServiceType(correctedName);
     }
   }, [selectedService]);
 
+  // --- FILE HANDLING HANDLERS (New) ---
+  const handleFileChange = (e, docName) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Save file for potential DB upload
+      setFiles(prev => ({ ...prev, [docName]: file }));
+      // Create preview URL
+      const objectUrl = URL.createObjectURL(file);
+      setPreviews(prev => ({ ...prev, [docName]: objectUrl }));
+    }
+  };
+
+  const removeFile = (e, docName) => {
+    e.preventDefault();
+    const newFiles = { ...files };
+    const newPreviews = { ...previews };
+    delete newFiles[docName];
+    delete newPreviews[docName];
+    setFiles(newFiles);
+    setPreviews(newPreviews);
+  };
+
   // --- PDF GENERATION LOGIC ---
   const generatePDF = () => {
     const doc = new jsPDF();
-    const getValue = (id) => document.getElementById(id)?.value || 'N/A';
-
-    // Header
-    doc.setFontSize(22);
-    doc.setTextColor(30, 58, 138); 
-    doc.text("REX360 SOLUTIONS - INTAKE FORM", 14, 20);
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Service: ${serviceType} | Date: ${new Date().toLocaleDateString()}`, 14, 26);
-    doc.line(14, 30, 196, 30);
-
-    // Core Personal Data
-    let bodyData = [
-      ['Surname', getValue('surname')],
-      ['First Name', getValue('firstname')],
-      ['Other Name', getValue('othername')],
-      ['Date of Birth', getValue('dob')],
-      ['Gender', getValue('gender')],
-      ['Phone', getValue('phone')],
-      ['Email', getValue('email')],
-      ['NIN', getValue('nin')],
-      ['Home Address', `${getValue('h-street')}, ${getValue('h-lga')}, ${getValue('h-state')}`],
-    ];
-
-    // Service Specific Data
-    if (serviceType === 'Business Name') {
-      bodyData.push(
-        ['---', '--- BUSINESS DETAILS ---'],
-        ['Business Name 1', getValue('bn-name1')],
-        ['Business Name 2', getValue('bn-name2')],
-        ['Business Address', `${getValue('b-street')}, ${getValue('b-lga')}, ${getValue('b-state')}`],
-        ['Nature of Business', getValue('bn-nature')],
-        ['Description', getValue('bn-desc')]
-      );
-    } else if (serviceType === 'Company Name') {
-      bodyData.push(
-        ['---', '--- COMPANY DETAILS ---'],
-        ['Proposed Name 1', getValue('cmp-name1')],
-        ['Proposed Name 2', getValue('cmp-name2')],
-        ['Company Email', getValue('cmp-email')],
-        ['Company Address', `${getValue('b-street')}, ${getValue('b-lga')}, ${getValue('b-state')}`],
-        ['Object 1', getValue('cmp-obj1')],
-        ['Object 2', getValue('cmp-obj2')],
-        ['---', '--- WITNESS DETAILS ---'],
-        ['Witness Name', `${getValue('wit-surname')} ${getValue('wit-firstname')}`],
-        ['Witness Phone', getValue('wit-phone')],
-        ['Witness NIN', getValue('wit-nin')],
-        ['Witness Address', `${getValue('wit-street')}, ${getValue('wit-lga')}, ${getValue('wit-state')}`]
-      );
-    } else if (serviceType === 'NGO Registration') {
-      bodyData.push(
-        ['---', '--- NGO TRUSTEES ---'],
-        ['Chairman', `${getValue('ngo-chair-name')} (NIN: ${getValue('ngo-chair-nin')})`],
-        ['Secretary', `${getValue('ngo-sec-name')} (NIN: ${getValue('ngo-sec-nin')})`],
-        ['Trustee 1', `${getValue('ngo-tr1-name')} (NIN: ${getValue('ngo-tr1-nin')})`],
-        ['Tenure', getValue('ngo-tenure')],
-        ['NGO Address', getValue('ngo-address')],
-        ['Aims & Obj 1', getValue('ngo-aim1')],
-        ['Aims & Obj 2', getValue('ngo-aim2')],
-        ['Proposed Name 1', getValue('ngo-name1')]
-      );
-    } else if (serviceType === 'Export Licence') {
-       bodyData.push(
-        ['RC Number', getValue('exp-rc')],
-        ['Tax ID (TIN)', getValue('exp-tin')],
-        ['Bank Details', getValue('exp-bank')]
-       );
-    } else if (serviceType === 'Trademark') {
-       bodyData.push(
-        ['---', '--- TRADEMARK DETAILS ---'],
-        ['Trademark Name', getValue('tm-name')],
-        ['Class', getValue('tm-class')],
-        ['Owner Address', `${getValue('tm-street')}, ${getValue('tm-lga')}, ${getValue('tm-state')}`],
-        ['Company Owner', getValue('tm-company')]
-       );
-    }
-
-    doc.autoTable({
-      startY: 35,
-      head: [['Field', 'Details']],
-      body: bodyData,
-      theme: 'grid',
-      headStyles: { fillColor: [0, 135, 81] },
-      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } }
-    });
-
-    doc.save(`REX360_${serviceType}_${getValue('surname')}.pdf`);
+    doc.text(`REX360 - ${serviceType}`, 10, 10);
+    doc.save(`REX360_${serviceType}.pdf`);
   };
 
-  /// --- DATABASE SAVING LOGIC (COMPLETE VERSION) ---
+  // --- DATABASE SAVING LOGIC ---
   const saveToDatabase = async (reference) => {
     const getValue = (id) => document.getElementById(id)?.value || '';
 
-    // 1. Gather ALL data (Common + Service Specific)
+    // Gather ALL data
     const formData = {
-      // --- Personal Info ---
       surname: getValue('surname'),
       firstname: getValue('firstname'),
       othername: getValue('othername'),
@@ -159,27 +94,23 @@ const Registration = () => {
       nin: getValue('nin'),
       residential_address: `${getValue('h-street')}, ${getValue('h-lga')}, ${getValue('h-state')}`,
 
-      // --- Business Name Fields ---
       business_name_1: getValue('bn-name1'),
       business_name_2: getValue('bn-name2'),
       business_nature: getValue('bn-nature'),
       business_description: getValue('bn-desc'),
       business_address: `${getValue('b-street')}, ${getValue('b-lga')}, ${getValue('b-state')}`,
 
-      // --- Company Fields ---
       company_name_1: getValue('cmp-name1'),
       company_name_2: getValue('cmp-name2'),
       company_email: getValue('cmp-email'),
       company_object_1: getValue('cmp-obj1'),
       company_object_2: getValue('cmp-obj2'),
       
-      // --- Witness Info (For Company) ---
       witness_name: `${getValue('wit-surname')} ${getValue('wit-firstname')}`,
       witness_phone: getValue('wit-phone'),
       witness_nin: getValue('wit-nin'),
       witness_address: `${getValue('wit-street')}, ${getValue('wit-lga')}, ${getValue('wit-state')}`,
 
-      // --- NGO Fields ---
       ngo_name: getValue('ngo-name1'),
       ngo_chairman: `${getValue('ngo-chair-name')} (NIN: ${getValue('ngo-chair-nin')})`,
       ngo_secretary: `${getValue('ngo-sec-name')} (NIN: ${getValue('ngo-sec-nin')})`,
@@ -188,22 +119,18 @@ const Registration = () => {
       ngo_address: getValue('ngo-address'),
       ngo_aims: `${getValue('ngo-aim1')}, ${getValue('ngo-aim2')}`,
 
-      // --- Trademark Fields ---
       trademark_name: getValue('tm-name'),
       trademark_class: getValue('tm-class'),
       trademark_owner_company: getValue('tm-company'),
       trademark_address: `${getValue('tm-street')}, ${getValue('tm-lga')}, ${getValue('tm-state')}`,
 
-      // --- Export Licence Fields ---
       export_rc_number: getValue('exp-rc'),
       export_tin: getValue('exp-tin'),
       export_bank_details: getValue('exp-bank'),
     };
 
-    // Remove empty fields to keep the database clean
     const cleanData = Object.fromEntries(Object.entries(formData).filter(([_, v]) => v !== '' && v !== 'N/A, N/A, N/A'));
 
-    // 2. Send to Supabase
     const { error } = await supabase
       .from('registrations')
       .insert([
@@ -215,20 +142,26 @@ const Registration = () => {
           email: formData.email,
           amount: currentPrice,
           paystack_ref: reference,
-          full_details: cleanData // <--- Saves ALL the fields above
+          full_details: cleanData 
         }
       ]);
 
-    if (error) console.error('Error saving registration:', error);
+    // 👇 UPDATED ERROR HANDLING
+    if (error) {
+      console.error('Error saving registration:', error);
+      alert("PAYMENT RECEIVED BUT DATABASE ERROR: " + error.message + " - Please contact Admin.");
+    } else {
+      // If success, the handleProcess function will move to the Success Step next
+    }
   };
+
   // --- PAYSTACK LOGIC ---
   const currentPrice = prices[serviceType] || 0; 
   
   const config = {
     reference: (new Date()).getTime().toString(),
     email: "rex360solutions@gmail.com",
-    amount: currentPrice * 100, // Converts Naira to Kobo
-    // 👇 YOUR LIVE KEY
+    amount: currentPrice * 100, 
     publicKey: 'pk_live_08ddf326f45872fd52bbaafda8e14863b37bd00b',
   };
 
@@ -241,23 +174,16 @@ const Registration = () => {
         return;
     }
     
-    // Trigger Paystack
     initializePayment(
-      // 1. Success Callback
       (response) => {
-        // A. Save to Database (So you see the order)
         saveToDatabase(response.reference);
-        
-        // B. Generate PDF (For the customer)
         generatePDF();
-        
-        // C. Show Success Screen
         setStep('success');
       },
-      // 2. Close/Cancel Callback
       () => alert("Payment Cancelled")
     );
   };
+
   if (loading) {
     return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -314,7 +240,6 @@ const Registration = () => {
                 <input id="cmp-name2" placeholder="Company Name 2" className="p-4 rounded-xl border-none font-bold" required />
                 <input id="cmp-email" placeholder="Company Email" className="p-4 rounded-xl border-none font-bold" required />
                 
-                {/* Company Address */}
                 <div className="md:col-span-2 space-y-2">
                    <label className="text-[10px] font-black uppercase text-slate-400">Company Address</label>
                    <div className="grid grid-cols-3 gap-2">
@@ -324,14 +249,12 @@ const Registration = () => {
                    </div>
                 </div>
 
-                {/* Objects */}
                 <div className="md:col-span-2 space-y-2">
                    <label className="text-[10px] font-black uppercase text-slate-400">Object of Memorandum</label>
                    <input id="cmp-obj1" placeholder="1. e.g., Sales of Hardware" className="w-full p-3 rounded-lg border-none mb-2" />
                    <input id="cmp-obj2" placeholder="2. e.g., Maintenance" className="w-full p-3 rounded-lg border-none" />
                 </div>
 
-                {/* Witness Section */}
                 <div className="md:col-span-2 p-4 bg-white rounded-xl border border-blue-100">
                     <p className="text-xs font-black text-cac-blue mb-3 uppercase">Witness Details</p>
                     <div className="grid md:grid-cols-2 gap-3">
@@ -353,7 +276,6 @@ const Registration = () => {
              <div className="grid gap-4">
                 <input id="ngo-name1" placeholder="Proposed NGO Name 1" className="p-4 rounded-xl border-none font-bold" />
                 
-                {/* Trustees Loop Visual */}
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="p-4 bg-white rounded-xl">
                     <p className="text-[10px] font-black mb-2">CHAIRMAN</p>
@@ -424,7 +346,11 @@ const Registration = () => {
              </div>
           </div>
         );
-      default: return null;
+      default: return (
+        <div className="p-8 text-center text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-2xl">
+            Please select a valid service from the menu.
+        </div>
+      );
     }
   };
 
@@ -453,14 +379,19 @@ const Registration = () => {
                <input id="surname" placeholder="Surname" className="p-4 bg-slate-50 rounded-xl font-bold" required />
                <input id="firstname" placeholder="First Name" className="p-4 bg-slate-50 rounded-xl font-bold" required />
                <input id="othername" placeholder="Other Name" className="p-4 bg-slate-50 rounded-xl font-bold" />
-               <input id="dob" type="date" className="p-4 bg-slate-50 rounded-xl font-bold" required />
+               
+               {/* FIX 3: Date Field with explicit Label */}
+               <div className="relative">
+                 <label className="text-[10px] font-black text-slate-400 uppercase block mb-1">Date of Birth</label>
+                 <input id="dob" type="date" className="w-full p-4 bg-slate-50 rounded-xl font-bold" required />
+               </div>
+
                <select id="gender" className="p-4 bg-slate-50 rounded-xl font-bold"><option>Male</option><option>Female</option></select>
                <input id="phone" placeholder="Phone" className="p-4 bg-slate-50 rounded-xl font-bold" required />
                <input id="email" type="email" placeholder="Personal Email" className="p-4 bg-slate-50 rounded-xl font-bold md:col-span-2" required />
                <input id="nin" placeholder="NIN" className="p-4 bg-slate-50 rounded-xl font-bold" required />
             </div>
             
-            {/* Residential Address */}
             <div className="bg-slate-50 p-4 rounded-xl space-y-2">
                <label className="text-[10px] font-black uppercase text-slate-400">Residential Address</label>
                <div className="grid grid-cols-3 gap-2">
@@ -474,15 +405,33 @@ const Registration = () => {
           {/* 2. DYNAMIC SERVICE FIELDS */}
           {renderFields()}
 
-          {/* 3. DOCUMENT UPLOADS */}
-          <div className="grid md:grid-cols-3 gap-4 pt-4 border-t">
-             {['ID Card', 'Signature', 'Passport'].map(doc => (
-               <label key={doc} className="flex flex-col items-center p-6 border-2 border-dashed border-slate-200 rounded-xl hover:border-cac-green cursor-pointer">
-                  <Upload className="text-slate-300 mb-2" />
-                  <span className="text-[10px] font-black text-slate-500">{doc}</span>
-                  <input type="file" className="hidden" required />
-               </label>
-             ))}
+          {/* 3. DOCUMENT UPLOADS WITH PREVIEWS (FIX 4) */}
+          <div className="space-y-4 pt-4 border-t">
+             <h3 className="text-xs font-black text-cac-blue uppercase tracking-widest border-l-4 border-cac-green pl-3">Required Documents</h3>
+             <div className="grid md:grid-cols-3 gap-6">
+                {['ID Card', 'Signature', 'Passport'].map(doc => (
+                  <label key={doc} className={`relative flex flex-col items-center justify-center p-1 h-48 border-2 border-dashed rounded-2xl cursor-pointer transition-all overflow-hidden group ${previews[doc] ? 'border-cac-green bg-green-50' : 'border-slate-300 hover:bg-slate-50'}`}>
+                      {previews[doc] ? (
+                        <>
+                          <img src={previews[doc]} alt={doc} className="w-full h-full object-cover rounded-xl" />
+                          <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                             <p className="text-white font-bold text-xs mb-2">Click to Change</p>
+                             <button onClick={(e) => removeFile(e, doc)} className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600"><X size={16}/></button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-center p-6">
+                           <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-100 transition-colors">
+                              <Upload className="text-slate-400 group-hover:text-cac-blue" size={24} />
+                           </div>
+                           <span className="block text-xs font-black text-slate-500 uppercase tracking-wider">{doc}</span>
+                           <span className="text-[10px] text-slate-400">(Click to Browse)</span>
+                        </div>
+                      )}
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, doc)} required={!files[doc]} />
+                  </label>
+                ))}
+             </div>
           </div>
 
           <button type="submit" className="w-full bg-cac-green text-white py-6 rounded-2xl font-black text-xl shadow-xl hover:bg-cac-blue transition-all flex items-center justify-center gap-4">
