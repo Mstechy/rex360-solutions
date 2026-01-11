@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Loader } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader, ArrowRight } from 'lucide-react';
 import { supabase } from '../SupabaseClient';
 
 const defaultSlides = [
@@ -56,9 +56,12 @@ const HeroSlider = () => {
     return () => clearInterval(timer);
   }, [current, slides.length]);
 
+  const nextSlide = () => setCurrent(current === slides.length - 1 ? 0 : current + 1);
+  const prevSlide = () => setCurrent(current === 0 ? slides.length - 1 : current - 1);
+
   return (
-    // FIX 1: Adjusted Height (400px on mobile, 600px on laptop)
-    <div className="relative h-[400px] md:h-[600px] w-full overflow-hidden bg-slate-900 group">
+    // FIX 1: Taller height for "Suite" look (500px mobile, 85% screen desktop)
+    <div className="relative h-[500px] md:h-[85vh] w-full overflow-hidden bg-slate-900 group">
       
       {loading && (
         <div className="absolute inset-0 z-50 bg-slate-900 flex items-center justify-center">
@@ -73,33 +76,40 @@ const HeroSlider = () => {
             index === current ? "opacity-100" : "opacity-0"
           }`}
         >
-          {/* Background Image with Dark Overlay */}
-          <div className="absolute inset-0 bg-black/50 z-10" />
-          
+          {/* FIX 2: Image Fitting - object-center keeps the focus in the middle */}
           <img
             src={slide.image_url} 
             alt={slide.title}
-            // FIX 2: Added 'object-top' so it doesn't cut off heads. Removed 'hover:scale' to stop zooming.
-            className="h-full w-full object-cover object-top" 
+            className="h-full w-full object-cover object-center" 
             onError={(e) => { e.target.src = "https://via.placeholder.com/1600x800?text=Rex360+Solutions+Banner" }}
           />
 
-          {/* Text Content */}
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-4">
-            <div className="animate-slideIn">
-                <h1 className="text-white text-4xl md:text-6xl font-black mb-4 drop-shadow-lg leading-tight">
-                <span className="text-cac-green">REX360</span> SOLUTIONS
+          {/* FIX 3: Professional Gradient Overlay (Better than flat black) */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/30 z-10" />
+
+          {/* Text Content - Perfectly Centered & Moderate Sizes */}
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-6 md:px-12">
+            <div className={`transition-all duration-700 transform ${index === current ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+                
+                {/* 1. COMPANY BADGE (Small & Elegant) */}
+                <span className="inline-block py-1 px-4 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-cac-green text-xs md:text-sm font-bold tracking-[0.2em] uppercase mb-6">
+                  REX360 Solutions
+                </span>
+
+                {/* 2. MAIN TITLE (Moderate Size - Not too huge) */}
+                <h1 className="text-white text-3xl md:text-5xl lg:text-6xl font-black mb-6 leading-tight max-w-4xl mx-auto drop-shadow-xl">
+                  {slide.title}
                 </h1>
-                <h2 className="text-white text-2xl md:text-4xl font-bold max-w-3xl drop-shadow-md leading-tight">
-                {slide.title}
-                </h2>
-                <p className="text-blue-100 mt-4 text-lg md:text-xl max-w-2xl font-medium">
-                {slide.subtitle}
+
+                {/* 3. SUBTITLE (Readable & Clean) */}
+                <p className="text-slate-200 text-base md:text-lg max-w-2xl mx-auto font-medium leading-relaxed mb-8 opacity-90">
+                  {slide.subtitle}
                 </p>
-                {/* FIX 3: Updated Link to match new structure */}
+
+                {/* 4. BUTTON (Professional Pill Shape) */}
                 <Link to="/register/Business Name">
-                    <button className="mt-8 bg-cac-green hover:bg-cac-blue text-white px-10 py-4 rounded-full font-black transition-all transform hover:scale-105 shadow-2xl border-2 border-transparent hover:border-white">
-                    REGISTER NOW
+                    <button className="bg-cac-green hover:bg-green-600 text-white px-8 py-3 md:px-10 md:py-4 rounded-full font-bold text-sm md:text-base transition-all transform hover:scale-105 shadow-lg flex items-center gap-2 mx-auto">
+                      GET STARTED <ArrowRight size={18} />
                     </button>
                 </Link>
             </div>
@@ -107,32 +117,32 @@ const HeroSlider = () => {
         </div>
       ))}
 
-      {/* Manual Navigation Arrows */}
+      {/* Navigation Arrows (Hidden on mobile for cleaner look, Visible on Desktop) */}
       {slides.length > 1 && (
         <>
             <button 
-                onClick={() => setCurrent(current === 0 ? slides.length - 1 : current - 1)}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-2 md:p-3 rounded-full bg-white/10 hover:bg-cac-green text-white backdrop-blur-sm transition-all"
+                onClick={prevSlide}
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-all hidden md:block"
             >
-                <ChevronLeft size={30} />
+                <ChevronLeft size={28} />
             </button>
             <button 
-                onClick={() => setCurrent(current === slides.length - 1 ? 0 : current + 1)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-2 md:p-3 rounded-full bg-white/10 hover:bg-cac-green text-white backdrop-blur-sm transition-all"
+                onClick={nextSlide}
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-all hidden md:block"
             >
-                <ChevronRight size={30} />
+                <ChevronRight size={28} />
             </button>
         </>
       )}
 
-      {/* Slide Indicators */}
+      {/* Slide Indicators (Dots) */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex space-x-3">
         {slides.map((_, idx) => (
             <button
                 key={idx}
                 onClick={() => setCurrent(idx)}
-                className={`w-3 h-3 rounded-full transition-all ${
-                    idx === current ? "bg-cac-green w-8" : "bg-white/50 hover:bg-white"
+                className={`h-2 rounded-full transition-all duration-300 ${
+                    idx === current ? "bg-cac-green w-8" : "bg-white/40 w-2 hover:bg-white"
                 }`}
             />
         ))}

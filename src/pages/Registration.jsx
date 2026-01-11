@@ -1,27 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { usePaystackPayment } from 'react-paystack';
-import { Upload, CheckCircle, MessageCircle, ArrowRight, FileText, User } from 'lucide-react';
+import { Upload, CheckCircle, MessageCircle, ArrowRight, Loader } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { supabase } from '../SupabaseClient'; // <--- CONNECTED TO DB
 
 const Registration = () => {
   const { selectedService } = useParams();
   const [serviceType, setServiceType] = useState('Business Name');
   const [step, setStep] = useState('form');
+  
+  // 1. STATE: We now store prices in State, not a hardcoded list
+  const [prices, setPrices] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  const prices = {
-    'Business Name': 35000,
-    'Company Name': 80000,
-    'NGO Registration': 140000,
-    'Trademark': 50000,
-    'Export Licence': 60000,
-    'Copyright': 70000,
-    'Annual Returns': 20000
-  };
-
+  // 2. FETCH PRICES FROM DB (The Fix)
   useEffect(() => {
-    if (selectedService && prices[selectedService]) setServiceType(selectedService);
+    const fetchPrices = async () => {
+      const { data, error } = await supabase
+        .from('services')
+        .select('name, price');
+
+      if (data) {
+        const priceMap = {};
+        data.forEach(item => {
+          // Normalize names so they match your form logic
+          let name = item.name;
+          if (name === 'Company Registration') name = 'Company Name';
+          
+          priceMap[name] = item.price;
+        });
+        setPrices(priceMap);
+        setLoading(false);
+      }
+    };
+
+    fetchPrices();
+  }, []);
+
+  // 3. Update Service Type when URL changes
+  useEffect(() => {
+    if (selectedService) {
+      // Fix "Company Registration" link issue automatically
+      let correctedName = selectedService;
+      if (selectedService === 'Company Registration') correctedName = 'Company Name';
+      
+      setServiceType(correctedName);
+    }
   }, [selectedService]);
 
   // --- PDF GENERATION LOGIC ---
@@ -29,16 +55,16 @@ const Registration = () => {
     const doc = new jsPDF();
     const getValue = (id) => document.getElementById(id)?.value || 'N/A';
 
-    // 1. Header
+    // Header
     doc.setFontSize(22);
-    doc.setTextColor(30, 58, 138); // CAC Blue
+    doc.setTextColor(30, 58, 138); 
     doc.text("REX360 SOLUTIONS - INTAKE FORM", 14, 20);
     doc.setFontSize(10);
     doc.setTextColor(100);
     doc.text(`Service: ${serviceType} | Date: ${new Date().toLocaleDateString()}`, 14, 26);
     doc.line(14, 30, 196, 30);
 
-    // 2. Core Personal Data (All Services)
+    // Core Personal Data
     let bodyData = [
       ['Surname', getValue('surname')],
       ['First Name', getValue('firstname')],
@@ -51,7 +77,7 @@ const Registration = () => {
       ['Home Address', `${getValue('h-street')}, ${getValue('h-lga')}, ${getValue('h-state')}`],
     ];
 
-    // 3. Service Specific Data Injection
+    // Service Specific Data
     if (serviceType === 'Business Name') {
       bodyData.push(
         ['---', '--- BUSINESS DETAILS ---'],
@@ -94,15 +120,22 @@ const Registration = () => {
         ['Tax ID (TIN)', getValue('exp-tin')],
         ['Bank Details', getValue('exp-bank')]
        );
+    } else if (serviceType === 'Trademark') {
+       bodyData.push(
+        ['---', '--- TRADEMARK DETAILS ---'],
+        ['Trademark Name', getValue('tm-name')],
+        ['Class', getValue('tm-class')],
+        ['Owner Address', `${getValue('tm-street')}, ${getValue('tm-lga')}, ${getValue('tm-state')}`],
+        ['Company Owner', getValue('tm-company')]
+       );
     }
 
-    // 4. Create Table
     doc.autoTable({
       startY: 35,
       head: [['Field', 'Details']],
       body: bodyData,
       theme: 'grid',
-      headStyles: { fillColor: [0, 135, 81] }, // CAC Green
+      headStyles: { fillColor: [0, 135, 81] },
       columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } }
     });
 
@@ -110,22 +143,40 @@ const Registration = () => {
   };
 
   // --- PAYSTACK LOGIC ---
+  // Calculates price dynamically based on DB fetch
+  const currentPrice = prices[serviceType] || 0; 
+  
   const config = {
     reference: (new Date()).getTime().toString(),
     email: "info@rex360solutions.com",
-    amount: prices[serviceType] * 100,
-    publicKey: 'pk_test_your_public_key_here', // Replace with real key
+    amount: currentPrice * 100, // Converts to Kobo
+    publicKey: 'pk_test_your_public_key_here', // REPLACE THIS WITH YOUR REAL KEY
   };
 
   const initializePayment = usePaystackPayment(config);
 
   const handleProcess = (e) => {
     e.preventDefault();
+    if (currentPrice === 0) {
+        alert("Price is loading or invalid. Please refresh.");
+        return;
+    }
     initializePayment(() => {
         generatePDF();
         setStep('success');
     }, () => alert("Payment Cancelled"));
   };
+
+  if (loading) {
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-50">
+            <div className="text-center">
+                <Loader className="animate-spin text-cac-green mx-auto mb-4" />
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Loading Live Prices...</p>
+            </div>
+        </div>
+    )
+  }
 
   if (step === 'success') {
     return (
@@ -249,6 +300,39 @@ const Registration = () => {
              </div>
           </div>
         );
+      case 'Trademark':
+        return (
+          <div className="space-y-6 p-6 bg-slate-50 rounded-3xl border border-slate-200">
+             <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest">Trademark Details</h3>
+             <div className="grid md:grid-cols-2 gap-4">
+                <input id="tm-name" placeholder="Proposed Trademark Name" className="p-4 rounded-xl border-none font-bold md:col-span-2" required />
+                
+                <div className="md:col-span-2 space-y-2">
+                   <label className="text-[10px] font-black uppercase text-slate-400">Class of Goods/Services</label>
+                   <select id="tm-class" className="w-full p-4 rounded-xl border-none font-bold bg-white">
+                      <option value="">Select Class...</option>
+                      <option value="Class 16 (Paper/Books)">Class 16 (Paper/Books)</option>
+                      <option value="Class 25 (Clothing)">Class 25 (Clothing)</option>
+                      <option value="Class 35 (Advertising/Business)">Class 35 (Advertising/Business)</option>
+                      <option value="Class 41 (Education/Entertainment)">Class 41 (Education/Entertainment)</option>
+                      <option value="Class 43 (Food/Drink)">Class 43 (Food/Drink)</option>
+                      <option value="Other">Other (Describe below)</option>
+                   </select>
+                </div>
+
+                <div className="md:col-span-2 space-y-2">
+                   <label className="text-[10px] font-black uppercase text-slate-400">Business/Owner Address</label>
+                   <div className="grid grid-cols-3 gap-2">
+                      <input id="tm-state" placeholder="State" className="p-3 rounded-lg border-none" />
+                      <input id="tm-lga" placeholder="LGA" className="p-3 rounded-lg border-none" />
+                      <input id="tm-street" placeholder="Street/No" className="p-3 rounded-lg border-none" />
+                   </div>
+                </div>
+
+                <input id="tm-company" placeholder="Company Name (If owned by company)" className="p-4 rounded-xl border-none font-bold md:col-span-2" />
+             </div>
+          </div>
+        );
       default: return null;
     }
   };
@@ -263,7 +347,9 @@ const Registration = () => {
           </div>
           <div className="text-right">
              <span className="block text-[10px] opacity-60 font-black">Fee</span>
-             <span className="text-2xl font-black text-cac-green">₦{prices[serviceType].toLocaleString()}</span>
+             <span className="text-2xl font-black text-cac-green">
+               {currentPrice ? `₦${currentPrice.toLocaleString()}` : <Loader className="animate-spin inline" size={16}/>}
+             </span>
           </div>
         </div>
 
