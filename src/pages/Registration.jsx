@@ -148,9 +148,10 @@ const Registration = () => {
   
   const config = {
     reference: (new Date()).getTime().toString(),
-    email: "info@rex360solutions.com",
-    amount: currentPrice * 100, // Converts to Kobo
-    publicKey: 'pk_test_your_public_key_here', // REPLACE THIS WITH YOUR REAL KEY
+    email: "rex360solutions@gmail.com", // Make sure this is your business email
+    amount: currentPrice * 100, // Converts Naira to Kobo
+    // 👇 THIS IS YOUR REAL LIVE KEY
+    publicKey: 'pk_live_08ddf326f45872fd52bbaafda8e14863b37bd00b',
   };
 
   const initializePayment = usePaystackPayment(config);
