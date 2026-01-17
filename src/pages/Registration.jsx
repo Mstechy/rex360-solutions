@@ -1,30 +1,126 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { usePaystackPayment } from 'react-paystack';
-import { Upload, CheckCircle, MessageCircle, ArrowRight, Loader, X, Image as ImageIcon } from 'lucide-react';
+import { Upload, CheckCircle, MessageCircle, ArrowRight, Loader, X } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { supabase } from '../SupabaseClient'; 
 
+// --- 1. HUGE LIST OF BUSINESS CATEGORIES ---
+const BUSINESS_CATEGORIES = {
+  "GENERAL SUPPLIES & SERVICES": [
+    "ACCOMODATION AND FOOD SERVIVES ACTIVITIES", "ACCOMMODATION", "BAKERY SERVICES", "BREWERY SERVICES", 
+    "DEAL IN HOT DRINKS", "DEAL IN SOFT DRINKS", "DEAL IN WINES, DRINKS AND BEVERAGES", 
+    "FOOD AND BEVERAGES SERVICES ACTIVITIES", "FRUITS/FRUIT JUICE PRODUCTION AND SALES", 
+    "HOTEL RESERVATION SERVICES", "HOTEL AND HOSPITALITY", "HOTEL/HOSPITALITY SERVICES", 
+    "OPERATE CONFECTIONERY SHOP", "OPERATE FAST FOOD OUTLET", "OPERATE RESTAURANT AND CATERING SERVICES", 
+    "OPERATE VIEWING CENTRE"
+  ],
+  "ADMINISTRATIVE & SUPPORT SERVICES": [
+    "ABATTOIR AND MEAT SELLING SERVICES", "AUTOMATED CAR WASH SERVICES", "BLACK SMITH SERVICES", 
+    "BLOCK INDUSTRY", "BOUTIQUE SERVICES", "CAR WASH SERVICES", "CATERING SERVICES", 
+    "CLEARING AND FORWARDING SERVICES", "COBBLER SERVICES", "COLD ROOM SERVICES", "COMMISSION AGENCY", 
+    "CYBERCAFÉ AND BUSINESS CENTRE", "DEAL IN JEWELRY AND ACCESSORIES", "DOMESTIC SUPPORT SERVICES", 
+    "DRIVING SCHOOL SERVICES", "EVENTS MANAGEMENT, GENERAL MERCHANDISE", "ELECTRICAL SERVICES", 
+    "EMPLOYMENT AGENCY", "ERRAND AND HOME DELIVERY SERVICES", "FARMING", "FASHION DESIGNING/ TAILORING", 
+    "FIRE AND SAFETY SERVICES", "FROZEN FOODS SERVICES", "GENERAL CONTRACTS", "GENERAL MERCHANDISE", 
+    "GOLD SMITING SERVICES", "HAT MAKING SERVICES", "INDUSTRIAL CHEMICAL SERVICES", "INTERIOR/EXTERIOR DECORATION", 
+    "INTERNET SERVICES", "LAUNDRY SERVICES", "LUBRICANT/ OIL SERVICES", "MAINTENANCE OF REFRIGERATOR/AC", 
+    "MANUFACTURER’S REPRESENTATION", "MARKETING SERVICES", "MEDICAL LABORATORY SERVICES", 
+    "MORTUARY AND FUNERAL SERVICES", "OFFICE ADMINISTRATIVE SUPPORT", "PLASTIC MANUFACTURING SERVICES", 
+    "PLUMBING SERVICES", "PRINTING PRESS", "PRODUCTION AND SALES OF FOOTWEAR", "PUBLIC RELATION SERVICES", 
+    "RENTAL SERVICES", "RESTAURANT", "SAFETY EQUIPMENT SERVICES", "SALE OF PETROLEUM PRODUCTS", 
+    "SALES OF BOOKS AND STATIONERIES", "SAWMILLING SERVICES", "SECURITY AND INVESTIGATION ACTIVITIES", 
+    "SUPPLY OF UNSKILLED LABOUR", "TECHNICAL SERVICES", "TEXTILE SERVICES", "TRADING", "TRAVEL AGENCY", 
+    "UPHOLSTERY AND FURNITURE MAKING", "VULCANIZING SERVICES", "WELDING SERVICES"
+  ],
+  "ART, ENTERTAINMENT & RECREATION": [
+    "ART GALLERIES, MUSEUM AND MONUMENTS", "ARTISTE MANAGEMENT", "ARTS, CRAFT, AND DESIGNING", 
+    "BAR SERVICES", "CREATIVE, ART AND ENTERTAINMENT", "ENTERTAINMENT SERVICES", "EVENTS MANAGEMENTS/ PLANNING", 
+    "GAMBLING AND BETTING ACTIVITIES", "INSTALLATION OF CCTV", "MODELING SERVICES", "ORGANISE DANCE CLASS", 
+    "PAINTING SERVICES", "PARKS AND RECREATION SERVICES", "PHOTOGRAPHY SERVICES", "SALE OF SPORTS EQUIPMENT", 
+    "SPORT PROMOTION SERVICES", "VIDEO CD RENTAL SERVICES"
+  ],
+  "AGRICULTURE, FORESTRY & FISHING": [
+    "ANIMAL HUSBANDRY SERVICES", "AQUARIUM SERVICES", "AVIARY SERVICES", "CROP AND ANIMAL PRODUCTION", 
+    "FISH FARMING/AQUACULTURE", "FOOD PRODUCTION AND PROCESSING", "FORESTRY & LOGGING", "GARDENING SERVICES", 
+    "HONEY PROCESSING", "HORTICULTURAL SERVICES", "KENNEL SERVICES", "LIVESTOCK FEEDS PRODUCTION", 
+    "LIVESTOCK MANAGEMENT", "MILLING AND GRINDING SERVICES", "PIGGERY SERVICES", "POULTRY SERVICES", 
+    "SALE OF AGRICULTURAL PRODUCE", "SALE OF AGRICULTURAL TOOLS", "SALE OF ANIMALS", "SALE OF DIARY PRODUCTS", 
+    "SALE OF GROCERIES"
+  ],
+  "CONSTRUCTION": [
+    "BOAT AND CANOE CONSTRUCTION", "BRICKLAYING/MASONARY SERVICES", "BUILDING WORKS", 
+    "CARPENTRY/UPHOLSTERY SERVICES", "CIVIL ENGINEERING", "CONSTRUCTION OF BUILDINGS", "GLASS WORKS", 
+    "MECHANICAL WORKS", "METAL WORKS", "SPECIALIZED CONSTRUCTION ACTIVITIES", "STEEL WORKS SERVICES", 
+    "SUPPLY, SALE AND DISTRIBUTION OF BUILDING MATERIALS"
+  ],
+  "EDUCATION": [
+    "APPRENTICESHIP AND TRAINING", "BUSINESS SUPPORT/ DEVELOPMENT", "CURRICULUM PLANNING", 
+    "EDUCATIONAL SERVICES AND CONSULTANCY", "FEASIBILITY STUDIES", "GUIDANCE AND COUNSELING", 
+    "ICT TRAINING AND CONSULTANCY", "LIBRARY SERVICES", "MONTESSORI SUPPLIES", "MONTESSORI TRAINING", 
+    "OPERATE BIBLE COLLEGE", "OPERATE COMPUTER TRAINING SCHOOL", "OPERATE CRÈCHE AND DAY CARE", 
+    "OPERATE ISLAMIC SCHOOL", "OPERATE NURSERY AND PRIMARY SCHOOL", "OPERATE PRIMARY AND SECONDARY SCHOOL", 
+    "ORGANIZING CONFERENCES", "PUBLICATION OF LAW REPORTS", "TEACHERS RECRUITMENT", "VOCATIONAL EDUCATION"
+  ],
+  "HEALTH & SOCIAL WORK": [
+    "AMBULANCE SERVICES", "BEAUTY AND SALON SERVICES", "CHEMIST/NURSING HOME", "DENTAL PRACTICE", 
+    "FUMIGATION AND PEST CONTROL", "GYMNASIUM SERVICES", "HUMAN HEALTH ACTIVITIES", "MAKE UP AND MAKEOVER", 
+    "OPERATE COMMUNITY HEALTH CENTRE", "OPERATE HOSPITAL/CLINIC", "OPERATE MATERNITY CLINIC", 
+    "OPTICAL SERVICES", "PATENT/MEDICINE SERVICES", "PEDICURE AND MANICURE", "PERFUMERY SERVICES", 
+    "PHYSIOTHERAPY SERVICES", "RESIDENTIAL CARE ACTIVITIES", "SPA TREATMENT SERVICES", 
+    "SALE OF VETERINARY EQUIPMENT", "TRADITIONAL MEDICINE", "VETERINARY SERVICES"
+  ],
+  "INFORMATION & COMMUNICATION": [
+    "ADVERTISING AND MARKETING", "BULK SMS SERVICES", "CINEMATOGRAPHY", "COMPUTER PROGRAMMING/CONSULTANCY", 
+    "GRAPHIC DESIGNING", "INFORMATION SERVICE ACTIVITIES", "NETWORKING SERVICES", "PUBLISHING ACTIVITIES", 
+    "SOFTWARE DEVELOPMENT", "SUPPLY OF HARDWARE", "TELECOMMUNICATIONS", "WEB DESIGN"
+  ],
+  "MANUFACTURING": [
+    "ALUMINUM MANUFACTURING", "LEATHER WORKS/TANNERY", "MANUFACTURE OF BASIC METALS", 
+    "MANUFACTURE OF BEVERAGES", "MANUFACTURE OF CHEMICALS", "MANUFACTURE OF FURNITURE", 
+    "MANUFACTURE OF FOOD PRODUCTS", "MANUFACTURE OF TEXTILES", "MANUFACTURE OF WEARING APPAREL", 
+    "MANUFACTURE OF WOOD PRODUCTS", "MANUFACTURING OF CANDLES", "MANUFACTURING OF PLASTIC PRODUCTS", 
+    "PRODUCTION AND SALE OF BOTTLED WATER", "PRODUCTION AND SALE OF TILES", "PRODUCTION OF EDIBLE OIL", 
+    "SALE AND MANUFACTURING COSMETICS"
+  ],
+  "MINING & QUARRYING": [
+    "EXTRACTION OF CRUDE PETROLEUM", "GEOSCIENCES SERVICES", "MINING AND GRINDING", "MINING OF COAL", 
+    "MINING OF METAL ORES", "OIL AND GAS SERVICES", "QUARRYING"
+  ],
+  "REAL ESTATE": [
+    "ENVIRONMENTAL AND LANDSCAPING", "ESTATE AGENCY", "ESTATE SURVEYING AND VALUATION", 
+    "ESTATE AND FACILITY MANAGEMENT", "PROJECT MANAGEMENT SERVICES", "PROPERTY DEVELOPMENT", 
+    "REAL ESTATE ACTIVITIES", "TOWN PLANNING SERVICES"
+  ],
+  "TRANSPORTATION": [
+    "AIR TRANSPORT", "LAND TRANSPORT", "POSTAL AND COURIER", "RAIL SERVICES", 
+    "ROAD TRANSPORTATION", "SEA TRANSPORT", "TRUCK AND HAULAGE", "WAREHOUSING", "WATER TRANSPORT"
+  ],
+  "ASSOCIATIONS (NGO/CLUBS)": [
+    "COMMUNITY BASED ASSOCIATION", "CULTURAL BASED ASSOCIATION", "FAITH BASED ASSOCIATION", 
+    "FOUNDATION BASED ASSOCIATION", "SOCIAL CLUBS BASED ASSOCIATION", "SPORTING BASED ASSOCIATION"
+  ],
+  "OTHERS": ["GENERAL MERCHANDISE", "TRADING", "OTHER PERSONAL SERVICES"]
+};
+
 const Registration = () => {
   const { selectedService } = useParams();
   
-  // FIX 1: Handle dynamic URL or default to Business Name
   const [serviceType, setServiceType] = useState(selectedService || 'Business Name');
   const [step, setStep] = useState('form');
-  
   const [prices, setPrices] = useState({});
   const [loading, setLoading] = useState(true);
-
-  // FIX 2: STATE FOR FILE PREVIEWS
   const [files, setFiles] = useState({});
   const [previews, setPreviews] = useState({});
+  
+  // New State for Business Nature Dropdowns
+  const [category, setCategory] = useState('');
+  const [nature, setNature] = useState('');
 
-  // 1. FETCH PRICES FROM DB
   useEffect(() => {
     const fetchPrices = async () => {
-      const { data, error } = await supabase.from('services').select('name, price');
-
+      const { data } = await supabase.from('services').select('name, price');
       if (data) {
         const priceMap = {};
         data.forEach(item => {
@@ -36,11 +132,9 @@ const Registration = () => {
         setLoading(false);
       }
     };
-
     fetchPrices();
   }, []);
 
-  // 2. Update Service Type when URL changes
   useEffect(() => {
     if (selectedService) {
       let correctedName = selectedService;
@@ -49,13 +143,10 @@ const Registration = () => {
     }
   }, [selectedService]);
 
-  // --- FILE HANDLING HANDLERS (New) ---
   const handleFileChange = (e, docName) => {
     const file = e.target.files[0];
     if (file) {
-      // Save file for potential DB upload
       setFiles(prev => ({ ...prev, [docName]: file }));
-      // Create preview URL
       const objectUrl = URL.createObjectURL(file);
       setPreviews(prev => ({ ...prev, [docName]: objectUrl }));
     }
@@ -71,136 +162,131 @@ const Registration = () => {
     setPreviews(newPreviews);
   };
 
-  // --- PDF GENERATION LOGIC ---
   const generatePDF = () => {
-    const doc = new jsPDF();
-    doc.text(`REX360 - ${serviceType}`, 10, 10);
-    doc.save(`REX360_${serviceType}.pdf`);
+    try {
+        const doc = new jsPDF();
+        doc.setFontSize(22);
+        doc.text("REX360 SOLUTIONS", 20, 20);
+        doc.setFontSize(14);
+        doc.text(`Service: ${serviceType}`, 20, 30);
+        doc.text(`Nature: ${nature}`, 20, 40);
+        doc.save(`REX360_${serviceType}.pdf`);
+    } catch (err) {
+        console.error("PDF Failed", err);
+    }
   };
 
-  // --- DATABASE SAVING LOGIC ---
   const saveToDatabase = async (reference) => {
     const getValue = (id) => document.getElementById(id)?.value || '';
+    const allInputs = document.querySelectorAll('input, select, textarea');
+    const fullDetails = {};
+    allInputs.forEach(input => {
+        if(input.id && input.type !== 'file') {
+            fullDetails[input.id] = input.value;
+        }
+    });
 
-    // Gather ALL data
-    const formData = {
-      surname: getValue('surname'),
-      firstname: getValue('firstname'),
-      othername: getValue('othername'),
-      gender: getValue('gender'),
-      dob: getValue('dob'),
-      phone: getValue('phone'),
-      email: getValue('email'),
-      nin: getValue('nin'),
-      residential_address: `${getValue('h-street')}, ${getValue('h-lga')}, ${getValue('h-state')}`,
-
-      business_name_1: getValue('bn-name1'),
-      business_name_2: getValue('bn-name2'),
-      business_nature: getValue('bn-nature'),
-      business_description: getValue('bn-desc'),
-      business_address: `${getValue('b-street')}, ${getValue('b-lga')}, ${getValue('b-state')}`,
-
-      company_name_1: getValue('cmp-name1'),
-      company_name_2: getValue('cmp-name2'),
-      company_email: getValue('cmp-email'),
-      company_object_1: getValue('cmp-obj1'),
-      company_object_2: getValue('cmp-obj2'),
-      
-      witness_name: `${getValue('wit-surname')} ${getValue('wit-firstname')}`,
-      witness_phone: getValue('wit-phone'),
-      witness_nin: getValue('wit-nin'),
-      witness_address: `${getValue('wit-street')}, ${getValue('wit-lga')}, ${getValue('wit-state')}`,
-
-      ngo_name: getValue('ngo-name1'),
-      ngo_chairman: `${getValue('ngo-chair-name')} (NIN: ${getValue('ngo-chair-nin')})`,
-      ngo_secretary: `${getValue('ngo-sec-name')} (NIN: ${getValue('ngo-sec-nin')})`,
-      ngo_trustee_1: `${getValue('ngo-tr1-name')} (NIN: ${getValue('ngo-tr1-nin')})`,
-      ngo_tenure: getValue('ngo-tenure'),
-      ngo_address: getValue('ngo-address'),
-      ngo_aims: `${getValue('ngo-aim1')}, ${getValue('ngo-aim2')}`,
-
-      trademark_name: getValue('tm-name'),
-      trademark_class: getValue('tm-class'),
-      trademark_owner_company: getValue('tm-company'),
-      trademark_address: `${getValue('tm-street')}, ${getValue('tm-lga')}, ${getValue('tm-state')}`,
-
-      export_rc_number: getValue('exp-rc'),
-      export_tin: getValue('exp-tin'),
-      export_bank_details: getValue('exp-bank'),
-    };
-
-    const cleanData = Object.fromEntries(Object.entries(formData).filter(([_, v]) => v !== '' && v !== 'N/A, N/A, N/A'));
+    // Add Dropdown values manually
+    fullDetails['business_category'] = category;
+    fullDetails['business_nature'] = nature;
 
     const { error } = await supabase
       .from('registrations')
       .insert([
         { 
           service_type: serviceType,
-          surname: formData.surname,
-          firstname: formData.firstname,
-          phone: formData.phone,
-          email: formData.email,
+          surname: getValue('surname'),
+          firstname: getValue('firstname'),
+          phone: getValue('phone'),
+          email: getValue('email'),
           amount: currentPrice,
           paystack_ref: reference,
-          full_details: cleanData 
+          full_details: fullDetails 
         }
       ]);
-
-    // 👇 UPDATED ERROR HANDLING
-    if (error) {
-      console.error('Error saving registration:', error);
-      alert("PAYMENT RECEIVED BUT DATABASE ERROR: " + error.message + " - Please contact Admin.");
-    } else {
-      // If success, the handleProcess function will move to the Success Step next
-    }
+    if (error) throw error;
   };
 
-  // --- PAYSTACK LOGIC ---
   const currentPrice = prices[serviceType] || 0; 
-  
   const config = {
     reference: (new Date()).getTime().toString(),
     email: "rex360solutions@gmail.com",
-    amount: currentPrice * 100, 
+    amount: currentPrice * 100,
     publicKey: 'pk_live_08ddf326f45872fd52bbaafda8e14863b37bd00b',
   };
-
   const initializePayment = usePaystackPayment(config);
 
   const handleProcess = (e) => {
     e.preventDefault();
-    if (currentPrice === 0) {
-        alert("Price is loading or invalid. Please refresh.");
-        return;
-    }
     
+    // Check Manual Files
+    const requiredDocs = ['ID Card', 'Signature', 'Passport'];
+    const missingDocs = requiredDocs.filter(doc => !files[doc]);
+
+    if (missingDocs.length > 0) {
+        alert(`Missing Documents:\n\nPlease upload your: ${missingDocs.join(', ')}`);
+        return; 
+    }
+
+    if (currentPrice === 0) return alert("Price loading...");
+
     initializePayment(
-      (response) => {
-        saveToDatabase(response.reference);
-        generatePDF();
-        setStep('success');
+      async (response) => {
+        try {
+            await saveToDatabase(response.reference);
+            generatePDF();
+            setStep('success');
+        } catch (error) {
+            alert("Payment Successful, but Database Error:\n" + error.message);
+        }
       },
       () => alert("Payment Cancelled")
     );
   };
 
-  if (loading) {
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-50">
-            <div className="text-center">
-                <Loader className="animate-spin text-cac-green mx-auto mb-4" />
-                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Loading Live Prices...</p>
-            </div>
-        </div>
-    )
-  }
+  // --- REUSABLE DROPDOWN COMPONENT ---
+  const NatureOfBusinessSelector = () => (
+    <div className="md:col-span-2 space-y-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+        <label className="text-[10px] font-black uppercase text-slate-400">Nature of Business</label>
+        
+        {/* Category Dropdown */}
+        <select 
+            className="w-full p-4 rounded-xl font-bold text-slate-700 mb-2 border-2 border-white focus:border-cac-blue transition-colors"
+            value={category}
+            onChange={(e) => {
+                setCategory(e.target.value);
+                setNature(''); // Reset nature when category changes
+            }}
+        >
+            <option value="">-- Select Business Category --</option>
+            {Object.keys(BUSINESS_CATEGORIES).map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+            ))}
+        </select>
+
+        {/* Specific Nature Dropdown */}
+        <select 
+            className="w-full p-4 rounded-xl font-bold text-slate-700 disabled:opacity-50 border-2 border-white focus:border-cac-blue transition-colors"
+            value={nature}
+            onChange={(e) => setNature(e.target.value)}
+            disabled={!category}
+        >
+            <option value="">-- Select Specific Activity --</option>
+            {category && BUSINESS_CATEGORIES[category].map(item => (
+                <option key={item} value={item}>{item}</option>
+            ))}
+        </select>
+    </div>
+  );
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader className="animate-spin text-cac-green"/></div>;
 
   if (step === 'success') {
     return (
       <div className="pt-40 pb-20 px-8 text-center bg-white min-h-screen animate-fadeIn">
         <CheckCircle size={80} className="text-cac-green mx-auto mb-6" />
         <h1 className="text-4xl font-black text-cac-blue mb-4 uppercase">Submission Successful!</h1>
-        <p className="text-slate-600 mb-8 max-w-md mx-auto">PDF Generated. Chat with Doris to finish.</p>
+        <p className="text-slate-600 mb-8 max-w-md mx-auto">Registration received. We will contact you shortly.</p>
         <a href="https://wa.me/2349048349548" className="inline-flex items-center bg-[#25D366] text-white px-10 py-5 rounded-full font-black text-xl shadow-xl hover:scale-105 transition-transform">
           <MessageCircle className="mr-2" /> CHAT ON WHATSAPP
         </a>
@@ -208,7 +294,7 @@ const Registration = () => {
     );
   }
 
-  // --- RENDER FORM FIELDS ---
+  // --- RENDER FIELDS ---
   const renderFields = () => {
     switch(serviceType) {
       case 'Business Name':
@@ -218,6 +304,9 @@ const Registration = () => {
              <div className="grid md:grid-cols-2 gap-4">
                 <input id="bn-name1" placeholder="Proposed Name 1" className="p-4 rounded-xl border-none font-bold" required />
                 <input id="bn-name2" placeholder="Proposed Name 2" className="p-4 rounded-xl border-none font-bold" required />
+                
+                <NatureOfBusinessSelector />
+                
                 <div className="md:col-span-2 space-y-2">
                    <label className="text-[10px] font-black uppercase text-slate-400">Business Address</label>
                    <div className="grid grid-cols-3 gap-2">
@@ -226,20 +315,20 @@ const Registration = () => {
                       <input id="b-street" placeholder="Street/No" className="p-3 rounded-lg border-none" />
                    </div>
                 </div>
-                <input id="bn-nature" placeholder="Nature of Business" className="p-4 rounded-xl border-none font-bold md:col-span-2" required />
-                <textarea id="bn-desc" placeholder="Full Description of Services" className="p-4 rounded-xl border-none font-bold md:col-span-2 h-24" required />
              </div>
           </div>
         );
       case 'Company Name':
         return (
           <div className="space-y-6 p-6 bg-slate-50 rounded-3xl border border-slate-200">
-             <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest">Company & Witness Info</h3>
+             <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest">Company Info</h3>
              <div className="grid md:grid-cols-2 gap-4">
                 <input id="cmp-name1" placeholder="Company Name 1" className="p-4 rounded-xl border-none font-bold" required />
                 <input id="cmp-name2" placeholder="Company Name 2" className="p-4 rounded-xl border-none font-bold" required />
                 <input id="cmp-email" placeholder="Company Email" className="p-4 rounded-xl border-none font-bold" required />
                 
+                <NatureOfBusinessSelector />
+
                 <div className="md:col-span-2 space-y-2">
                    <label className="text-[10px] font-black uppercase text-slate-400">Company Address</label>
                    <div className="grid grid-cols-3 gap-2">
@@ -249,14 +338,8 @@ const Registration = () => {
                    </div>
                 </div>
 
-                <div className="md:col-span-2 space-y-2">
-                   <label className="text-[10px] font-black uppercase text-slate-400">Object of Memorandum</label>
-                   <input id="cmp-obj1" placeholder="1. e.g., Sales of Hardware" className="w-full p-3 rounded-lg border-none mb-2" />
-                   <input id="cmp-obj2" placeholder="2. e.g., Maintenance" className="w-full p-3 rounded-lg border-none" />
-                </div>
-
                 <div className="md:col-span-2 p-4 bg-white rounded-xl border border-blue-100">
-                    <p className="text-xs font-black text-cac-blue mb-3 uppercase">Witness Details</p>
+                    <p className="text-xs font-black text-cac-blue mb-3 uppercase">Witness / Director Details</p>
                     <div className="grid md:grid-cols-2 gap-3">
                       <input id="wit-surname" placeholder="Surname" className="p-3 bg-slate-50 rounded-lg" />
                       <input id="wit-firstname" placeholder="First Name" className="p-3 bg-slate-50 rounded-lg" />
@@ -276,22 +359,9 @@ const Registration = () => {
              <div className="grid gap-4">
                 <input id="ngo-name1" placeholder="Proposed NGO Name 1" className="p-4 rounded-xl border-none font-bold" />
                 
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-white rounded-xl">
-                    <p className="text-[10px] font-black mb-2">CHAIRMAN</p>
-                    <input id="ngo-chair-name" placeholder="Full Name" className="w-full p-2 mb-2 bg-slate-50 rounded" />
-                    <input id="ngo-chair-nin" placeholder="NIN" className="w-full p-2 bg-slate-50 rounded" />
-                  </div>
-                  <div className="p-4 bg-white rounded-xl">
-                    <p className="text-[10px] font-black mb-2">SECRETARY</p>
-                    <input id="ngo-sec-name" placeholder="Full Name" className="w-full p-2 mb-2 bg-slate-50 rounded" />
-                    <input id="ngo-sec-nin" placeholder="NIN" className="w-full p-2 bg-slate-50 rounded" />
-                  </div>
-                </div>
+                {/* NGO Usually has aims, but if they need business nature (e.g. Foundation scope) */}
+                <NatureOfBusinessSelector />
 
-                <input id="ngo-tr1-name" placeholder="Trustee 1 Full Name" className="p-4 rounded-xl border-none font-bold" />
-                <input id="ngo-tr1-nin" placeholder="Trustee 1 NIN" className="p-4 rounded-xl border-none font-bold" />
-                
                 <input id="ngo-tenure" placeholder="Trustees Tenure (e.g. 20 Years)" className="p-4 rounded-xl border-none font-bold" />
                 <input id="ngo-address" placeholder="NGO Full Address" className="p-4 rounded-xl border-none font-bold" />
                 
@@ -327,31 +397,27 @@ const Registration = () => {
                       <option value="Class 16 (Paper/Books)">Class 16 (Paper/Books)</option>
                       <option value="Class 25 (Clothing)">Class 25 (Clothing)</option>
                       <option value="Class 35 (Advertising/Business)">Class 35 (Advertising/Business)</option>
-                      <option value="Class 41 (Education/Entertainment)">Class 41 (Education/Entertainment)</option>
-                      <option value="Class 43 (Food/Drink)">Class 43 (Food/Drink)</option>
-                      <option value="Other">Other (Describe below)</option>
+                      <option value="Other">Other</option>
                    </select>
                 </div>
-
                 <div className="md:col-span-2 space-y-2">
-                   <label className="text-[10px] font-black uppercase text-slate-400">Business/Owner Address</label>
+                   <label className="text-[10px] font-black uppercase text-slate-400">Owner Address</label>
                    <div className="grid grid-cols-3 gap-2">
                       <input id="tm-state" placeholder="State" className="p-3 rounded-lg border-none" />
                       <input id="tm-lga" placeholder="LGA" className="p-3 rounded-lg border-none" />
                       <input id="tm-street" placeholder="Street/No" className="p-3 rounded-lg border-none" />
                    </div>
                 </div>
-
-                <input id="tm-company" placeholder="Company Name (If owned by company)" className="p-4 rounded-xl border-none font-bold md:col-span-2" />
              </div>
           </div>
         );
-      default: return (
-        <div className="p-8 text-center text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-2xl">
-            Please select a valid service from the menu.
-        </div>
-      );
+      default: return null;
     }
+  };
+
+  // --- DYNAMIC HEADER TITLE ---
+  const getPersonalHeader = () => {
+    return serviceType === 'NGO Registration' ? 'Chairman Details' : 'Personal Information';
   };
 
   return (
@@ -372,27 +438,26 @@ const Registration = () => {
 
         <form onSubmit={handleProcess} className="p-8 md:p-12 space-y-8">
           
-          {/* 1. PERSONAL DETAILS (COMMON) */}
           <div className="space-y-4">
-            <h3 className="text-xs font-black text-cac-blue uppercase tracking-widest border-l-4 border-cac-green pl-3">Personal Information</h3>
+            <h3 className="text-xs font-black text-cac-blue uppercase tracking-widest border-l-4 border-cac-green pl-3">
+                {getPersonalHeader()}
+            </h3>
             <div className="grid md:grid-cols-3 gap-4">
                <input id="surname" placeholder="Surname" className="p-4 bg-slate-50 rounded-xl font-bold" required />
                <input id="firstname" placeholder="First Name" className="p-4 bg-slate-50 rounded-xl font-bold" required />
                <input id="othername" placeholder="Other Name" className="p-4 bg-slate-50 rounded-xl font-bold" />
                
-               {/* FIX 3: Date Field with explicit Label */}
                <div className="relative">
                  <label className="text-[10px] font-black text-slate-400 uppercase block mb-1">Date of Birth</label>
                  <input id="dob" type="date" className="w-full p-4 bg-slate-50 rounded-xl font-bold" required />
                </div>
 
                <select id="gender" className="p-4 bg-slate-50 rounded-xl font-bold"><option>Male</option><option>Female</option></select>
+               <input id="email" type="email" placeholder="Email Address" className="p-4 bg-slate-50 rounded-xl font-bold md:col-span-2" required />
                <input id="phone" placeholder="Phone" className="p-4 bg-slate-50 rounded-xl font-bold" required />
-               <input id="email" type="email" placeholder="Personal Email" className="p-4 bg-slate-50 rounded-xl font-bold md:col-span-2" required />
                <input id="nin" placeholder="NIN" className="p-4 bg-slate-50 rounded-xl font-bold" required />
             </div>
-            
-            <div className="bg-slate-50 p-4 rounded-xl space-y-2">
+             <div className="bg-slate-50 p-4 rounded-xl space-y-2">
                <label className="text-[10px] font-black uppercase text-slate-400">Residential Address</label>
                <div className="grid grid-cols-3 gap-2">
                   <input id="h-state" placeholder="State" className="p-3 bg-white rounded-lg" />
@@ -402,10 +467,29 @@ const Registration = () => {
             </div>
           </div>
 
-          {/* 2. DYNAMIC SERVICE FIELDS */}
-          {renderFields()}
+          {/* SECRETARY SECTION FOR NGO ONLY */}
+          {serviceType === 'NGO Registration' && (
+            <div className="space-y-4 pt-4 border-t">
+               <h3 className="text-xs font-black text-cac-blue uppercase tracking-widest border-l-4 border-cac-green pl-3">Secretary Details</h3>
+               <div className="grid md:grid-cols-3 gap-4">
+                  <input id="sec-surname" placeholder="Surname" className="p-4 bg-slate-50 rounded-xl font-bold" />
+                  <input id="sec-firstname" placeholder="First Name" className="p-4 bg-slate-50 rounded-xl font-bold" />
+                  <input id="sec-phone" placeholder="Phone" className="p-4 bg-slate-50 rounded-xl font-bold" />
+                  <input id="sec-nin" placeholder="NIN" className="p-4 bg-slate-50 rounded-xl font-bold" />
+                  <div className="md:col-span-3 bg-slate-50 p-4 rounded-xl space-y-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400">Secretary Address</label>
+                    <div className="grid grid-cols-3 gap-2">
+                        <input id="sec-state" placeholder="State" className="p-3 bg-white rounded-lg" />
+                        <input id="sec-lga" placeholder="LGA" className="p-3 bg-white rounded-lg" />
+                        <input id="sec-street" placeholder="Street/No" className="p-3 bg-white rounded-lg" />
+                    </div>
+                  </div>
+               </div>
+            </div>
+          )}
 
-          {/* 3. DOCUMENT UPLOADS WITH PREVIEWS (FIX 4) */}
+          {renderFields()}
+          
           <div className="space-y-4 pt-4 border-t">
              <h3 className="text-xs font-black text-cac-blue uppercase tracking-widest border-l-4 border-cac-green pl-3">Required Documents</h3>
              <div className="grid md:grid-cols-3 gap-6">
@@ -428,7 +512,7 @@ const Registration = () => {
                            <span className="text-[10px] text-slate-400">(Click to Browse)</span>
                         </div>
                       )}
-                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, doc)} required={!files[doc]} />
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, doc)} />
                   </label>
                 ))}
              </div>
