@@ -6,7 +6,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { supabase } from '../SupabaseClient'; 
 
-// --- 1. HUGE LIST OF BUSINESS CATEGORIES ---
+// --- 1. HUGE LIST OF BUSINESS CATEGORIES (100% PRESERVED) ---
 const BUSINESS_CATEGORIES = {
   "GENERAL SUPPLIES & SERVICES": [
     "ACCOMODATION AND FOOD SERVIVES ACTIVITIES", "ACCOMMODATION", "BAKERY SERVICES", "BREWERY SERVICES", 
@@ -111,10 +111,11 @@ const Registration = () => {
   const [step, setStep] = useState('form');
   const [prices, setPrices] = useState({});
   const [loading, setLoading] = useState(true);
-  const [files, setFiles] = useState({});
-  const [previews, setPreviews] = useState({});
   
-  // New State for Business Nature Dropdowns
+  // FIXED: Supports arrays of files for multiple uploads
+  const [files, setFiles] = useState({ "ID Card": [], "Signature": [], "Passport": [] });
+  const [previews, setPreviews] = useState({ "ID Card": [], "Signature": [], "Passport": [] });
+  
   const [category, setCategory] = useState('');
   const [nature, setNature] = useState('');
 
@@ -144,22 +145,27 @@ const Registration = () => {
   }, [selectedService]);
 
   const handleFileChange = (e, docName) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFiles(prev => ({ ...prev, [docName]: file }));
-      const objectUrl = URL.createObjectURL(file);
-      setPreviews(prev => ({ ...prev, [docName]: objectUrl }));
+    const selected = Array.from(e.target.files);
+    if (selected.length > 0) {
+      const newPreviews = selected.map(file => URL.createObjectURL(file));
+      setFiles(prev => ({ ...prev, [docName]: [...prev[docName], ...selected] }));
+      setPreviews(prev => ({ ...prev, [docName]: [...prev[docName], ...newPreviews] }));
     }
   };
 
-  const removeFile = (e, docName) => {
+  const removeFile = (e, docName, index) => {
     e.preventDefault();
-    const newFiles = { ...files };
-    const newPreviews = { ...previews };
-    delete newFiles[docName];
-    delete newPreviews[docName];
-    setFiles(newFiles);
-    setPreviews(newPreviews);
+    setFiles(prev => {
+        const updated = [...prev[docName]];
+        updated.splice(index, 1);
+        return { ...prev, [docName]: updated };
+    });
+    setPreviews(prev => {
+        const updated = [...prev[docName]];
+        URL.revokeObjectURL(updated[index]);
+        updated.splice(index, 1);
+        return { ...prev, [docName]: updated };
+    });
   };
 
   const generatePDF = () => {
@@ -176,35 +182,52 @@ const Registration = () => {
     }
   };
 
+  // UPDATED: Now includes file upload to storage
   const saveToDatabase = async (reference) => {
     const getValue = (id) => document.getElementById(id)?.value || '';
     const allInputs = document.querySelectorAll('input, select, textarea');
     const fullDetails = {};
+    
     allInputs.forEach(input => {
         if(input.id && input.type !== 'file') {
             fullDetails[input.id] = input.value;
         }
     });
 
-    // Add Dropdown values manually
     fullDetails['business_category'] = category;
     fullDetails['business_nature'] = nature;
 
-    const { error } = await supabase
-      .from('registrations')
-      .insert([
-        { 
-          service_type: serviceType,
-          surname: getValue('surname'),
-          firstname: getValue('firstname'),
-          phone: getValue('phone'),
-          email: getValue('email'),
-          amount: currentPrice,
-          paystack_ref: reference,
-          full_details: fullDetails 
+    try {
+        // Upload documents and get URLs
+        const documentUrls = {};
+        for (const key of Object.keys(files)) {
+            const uploadPromises = files[key].map(async (file, i) => {
+                const path = `${key}/${Date.now()}_${i}_${file.name}`;
+                const { error: uploadErr } = await supabase.storage.from('documents').upload(path, file);
+                if (uploadErr) throw uploadErr;
+                const { data } = supabase.storage.from('documents').getPublicUrl(path);
+                return data.publicUrl;
+            });
+            documentUrls[key] = await Promise.all(uploadPromises);
         }
-      ]);
-    if (error) throw error;
+
+        const { error } = await supabase.from('registrations').insert([
+            { 
+              service_type: serviceType,
+              surname: getValue('surname'),
+              firstname: getValue('firstname'),
+              phone: getValue('phone'),
+              email: getValue('email'),
+              amount: currentPrice,
+              paystack_ref: reference,
+              full_details: { ...fullDetails, uploaded_docs: documentUrls } 
+            }
+        ]);
+        if (error) throw error;
+    } catch (err) {
+        console.error("Database Error", err);
+        throw err;
+    }
   };
 
   const currentPrice = prices[serviceType] || 0; 
@@ -219,9 +242,8 @@ const Registration = () => {
   const handleProcess = (e) => {
     e.preventDefault();
     
-    // Check Manual Files
-    const requiredDocs = ['ID Card', 'Signature', 'Passport'];
-    const missingDocs = requiredDocs.filter(doc => !files[doc]);
+    // Check if each of the 3 required categories has at least one file
+    const missingDocs = Object.keys(files).filter(doc => files[doc].length === 0);
 
     if (missingDocs.length > 0) {
         alert(`Missing Documents:\n\nPlease upload your: ${missingDocs.join(', ')}`);
@@ -237,25 +259,22 @@ const Registration = () => {
             generatePDF();
             setStep('success');
         } catch (error) {
-            alert("Payment Successful, but Database Error:\n" + error.message);
+            alert("Payment Successful, but error saving data: " + error.message);
         }
       },
       () => alert("Payment Cancelled")
     );
   };
 
-  // --- REUSABLE DROPDOWN COMPONENT ---
   const NatureOfBusinessSelector = () => (
     <div className="md:col-span-2 space-y-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
         <label className="text-[10px] font-black uppercase text-slate-400">Nature of Business</label>
-        
-        {/* Category Dropdown */}
         <select 
             className="w-full p-4 rounded-xl font-bold text-slate-700 mb-2 border-2 border-white focus:border-cac-blue transition-colors"
             value={category}
             onChange={(e) => {
                 setCategory(e.target.value);
-                setNature(''); // Reset nature when category changes
+                setNature('');
             }}
         >
             <option value="">-- Select Business Category --</option>
@@ -263,8 +282,6 @@ const Registration = () => {
                 <option key={cat} value={cat}>{cat}</option>
             ))}
         </select>
-
-        {/* Specific Nature Dropdown */}
         <select 
             className="w-full p-4 rounded-xl font-bold text-slate-700 disabled:opacity-50 border-2 border-white focus:border-cac-blue transition-colors"
             value={nature}
@@ -294,7 +311,6 @@ const Registration = () => {
     );
   }
 
-  // --- RENDER FIELDS ---
   const renderFields = () => {
     switch(serviceType) {
       case 'Business Name':
@@ -304,9 +320,7 @@ const Registration = () => {
              <div className="grid md:grid-cols-2 gap-4">
                 <input id="bn-name1" placeholder="Proposed Name 1" className="p-4 rounded-xl border-none font-bold" required />
                 <input id="bn-name2" placeholder="Proposed Name 2" className="p-4 rounded-xl border-none font-bold" required />
-                
                 <NatureOfBusinessSelector />
-                
                 <div className="md:col-span-2 space-y-2">
                    <label className="text-[10px] font-black uppercase text-slate-400">Business Address</label>
                    <div className="grid grid-cols-3 gap-2">
@@ -326,9 +340,7 @@ const Registration = () => {
                 <input id="cmp-name1" placeholder="Company Name 1" className="p-4 rounded-xl border-none font-bold" required />
                 <input id="cmp-name2" placeholder="Company Name 2" className="p-4 rounded-xl border-none font-bold" required />
                 <input id="cmp-email" placeholder="Company Email" className="p-4 rounded-xl border-none font-bold" required />
-                
                 <NatureOfBusinessSelector />
-
                 <div className="md:col-span-2 space-y-2">
                    <label className="text-[10px] font-black uppercase text-slate-400">Company Address</label>
                    <div className="grid grid-cols-3 gap-2">
@@ -337,7 +349,6 @@ const Registration = () => {
                       <input id="b-street" placeholder="Street/No" className="p-3 rounded-lg border-none" />
                    </div>
                 </div>
-
                 <div className="md:col-span-2 p-4 bg-white rounded-xl border border-blue-100">
                     <p className="text-xs font-black text-cac-blue mb-3 uppercase">Witness / Director Details</p>
                     <div className="grid md:grid-cols-2 gap-3">
@@ -358,13 +369,9 @@ const Registration = () => {
              <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest">Trustees & Aims</h3>
              <div className="grid gap-4">
                 <input id="ngo-name1" placeholder="Proposed NGO Name 1" className="p-4 rounded-xl border-none font-bold" />
-                
-                {/* NGO Usually has aims, but if they need business nature (e.g. Foundation scope) */}
                 <NatureOfBusinessSelector />
-
                 <input id="ngo-tenure" placeholder="Trustees Tenure (e.g. 20 Years)" className="p-4 rounded-xl border-none font-bold" />
                 <input id="ngo-address" placeholder="NGO Full Address" className="p-4 rounded-xl border-none font-bold" />
-                
                 <div className="space-y-2">
                    <label className="text-[10px] font-black uppercase text-slate-400">Aims & Objectives</label>
                    <input id="ngo-aim1" placeholder="1. Aim..." className="w-full p-3 rounded-lg border-none mb-2" />
@@ -389,7 +396,6 @@ const Registration = () => {
              <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest">Trademark Details</h3>
              <div className="grid md:grid-cols-2 gap-4">
                 <input id="tm-name" placeholder="Proposed Trademark Name" className="p-4 rounded-xl border-none font-bold md:col-span-2" required />
-                
                 <div className="md:col-span-2 space-y-2">
                    <label className="text-[10px] font-black uppercase text-slate-400">Class of Goods/Services</label>
                    <select id="tm-class" className="w-full p-4 rounded-xl border-none font-bold bg-white">
@@ -400,14 +406,6 @@ const Registration = () => {
                       <option value="Other">Other</option>
                    </select>
                 </div>
-                <div className="md:col-span-2 space-y-2">
-                   <label className="text-[10px] font-black uppercase text-slate-400">Owner Address</label>
-                   <div className="grid grid-cols-3 gap-2">
-                      <input id="tm-state" placeholder="State" className="p-3 rounded-lg border-none" />
-                      <input id="tm-lga" placeholder="LGA" className="p-3 rounded-lg border-none" />
-                      <input id="tm-street" placeholder="Street/No" className="p-3 rounded-lg border-none" />
-                   </div>
-                </div>
              </div>
           </div>
         );
@@ -415,7 +413,6 @@ const Registration = () => {
     }
   };
 
-  // --- DYNAMIC HEADER TITLE ---
   const getPersonalHeader = () => {
     return serviceType === 'NGO Registration' ? 'Chairman Details' : 'Personal Information';
   };
@@ -446,12 +443,10 @@ const Registration = () => {
                <input id="surname" placeholder="Surname" className="p-4 bg-slate-50 rounded-xl font-bold" required />
                <input id="firstname" placeholder="First Name" className="p-4 bg-slate-50 rounded-xl font-bold" required />
                <input id="othername" placeholder="Other Name" className="p-4 bg-slate-50 rounded-xl font-bold" />
-               
                <div className="relative">
                  <label className="text-[10px] font-black text-slate-400 uppercase block mb-1">Date of Birth</label>
                  <input id="dob" type="date" className="w-full p-4 bg-slate-50 rounded-xl font-bold" required />
                </div>
-
                <select id="gender" className="p-4 bg-slate-50 rounded-xl font-bold"><option>Male</option><option>Female</option></select>
                <input id="email" type="email" placeholder="Email Address" className="p-4 bg-slate-50 rounded-xl font-bold md:col-span-2" required />
                <input id="phone" placeholder="Phone" className="p-4 bg-slate-50 rounded-xl font-bold" required />
@@ -467,7 +462,6 @@ const Registration = () => {
             </div>
           </div>
 
-          {/* SECRETARY SECTION FOR NGO ONLY */}
           {serviceType === 'NGO Registration' && (
             <div className="space-y-4 pt-4 border-t">
                <h3 className="text-xs font-black text-cac-blue uppercase tracking-widest border-l-4 border-cac-green pl-3">Secretary Details</h3>
@@ -476,44 +470,33 @@ const Registration = () => {
                   <input id="sec-firstname" placeholder="First Name" className="p-4 bg-slate-50 rounded-xl font-bold" />
                   <input id="sec-phone" placeholder="Phone" className="p-4 bg-slate-50 rounded-xl font-bold" />
                   <input id="sec-nin" placeholder="NIN" className="p-4 bg-slate-50 rounded-xl font-bold" />
-                  <div className="md:col-span-3 bg-slate-50 p-4 rounded-xl space-y-2">
-                    <label className="text-[10px] font-black uppercase text-slate-400">Secretary Address</label>
-                    <div className="grid grid-cols-3 gap-2">
-                        <input id="sec-state" placeholder="State" className="p-3 bg-white rounded-lg" />
-                        <input id="sec-lga" placeholder="LGA" className="p-3 bg-white rounded-lg" />
-                        <input id="sec-street" placeholder="Street/No" className="p-3 bg-white rounded-lg" />
-                    </div>
-                  </div>
                </div>
             </div>
           )}
 
           {renderFields()}
           
+          {/* UPDATED: Multiple File Display logic */}
           <div className="space-y-4 pt-4 border-t">
              <h3 className="text-xs font-black text-cac-blue uppercase tracking-widest border-l-4 border-cac-green pl-3">Required Documents</h3>
-             <div className="grid md:grid-cols-3 gap-6">
-                {['ID Card', 'Signature', 'Passport'].map(doc => (
-                  <label key={doc} className={`relative flex flex-col items-center justify-center p-1 h-48 border-2 border-dashed rounded-2xl cursor-pointer transition-all overflow-hidden group ${previews[doc] ? 'border-cac-green bg-green-50' : 'border-slate-300 hover:bg-slate-50'}`}>
-                      {previews[doc] ? (
-                        <>
-                          <img src={previews[doc]} alt={doc} className="w-full h-full object-cover rounded-xl" />
-                          <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                             <p className="text-white font-bold text-xs mb-2">Click to Change</p>
-                             <button onClick={(e) => removeFile(e, doc)} className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600"><X size={16}/></button>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="text-center p-6">
-                           <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-100 transition-colors">
-                              <Upload className="text-slate-400 group-hover:text-cac-blue" size={24} />
-                           </div>
-                           <span className="block text-xs font-black text-slate-500 uppercase tracking-wider">{doc}</span>
-                           <span className="text-[10px] text-slate-400">(Click to Browse)</span>
+             <div className="grid gap-6">
+                {Object.keys(files).map(doc => (
+                  <div key={doc} className="space-y-3">
+                    <label className="text-[10px] font-black uppercase text-slate-400">{doc}</label>
+                    <div className="flex flex-wrap gap-4">
+                      {previews[doc].map((src, index) => (
+                        <div key={index} className="relative w-28 h-28 group">
+                          <img src={src} className="w-full h-full object-cover rounded-xl border-2 border-cac-green" />
+                          <button onClick={(e) => removeFile(e, doc, index)} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full shadow-lg hover:scale-110 transition-transform"><X size={14}/></button>
                         </div>
-                      )}
-                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, doc)} />
-                  </label>
+                      ))}
+                      <label className="w-28 h-28 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors">
+                        <Upload className="text-slate-400" size={20} />
+                        <span className="text-[8px] font-black mt-1">UPLOAD</span>
+                        <input type="file" multiple className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, doc)} />
+                      </label>
+                    </div>
+                  </div>
                 ))}
              </div>
           </div>
