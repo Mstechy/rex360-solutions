@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../SupabaseClient'; // Connect to Admin Data
 
 const AgentIntro = () => {
-  // 1. State to hold the dynamic image
-  const [agentImage, setAgentImage] = useState('/oat.png'); // Default fallback
+  // 1. State starts empty so no static/checkerboard image shows by default
+  const [agentImage, setAgentImage] = useState(''); 
 
   // 2. Fetch the "Real" photo from Supabase
   useEffect(() => {
@@ -26,7 +26,7 @@ const AgentIntro = () => {
     <section id="about-doris" className="py-24 px-8 bg-white overflow-hidden scroll-mt-24">
       <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-16 items-center">
         
-        {/* Left Side: Professional Description */}
+        {/* Left Side: Professional Description - EXACTLY AS YOU WROTE IT */}
         <div className="space-y-8 animate-fadeIn">
           <div className="inline-block px-5 py-2 bg-green-50 border-l-8 border-cac-green text-cac-green font-black text-xs tracking-[0.2em] uppercase rounded-r-lg shadow-sm">
             CAC Accredited Agent
@@ -49,19 +49,19 @@ const AgentIntro = () => {
           </div>
         </div>
 
-        {/* Right Side: Dynamic Image from Database */}
+        {/* Right Side: Dynamic Image ONLY */}
         <div className="relative flex justify-center items-center">
           <div className="relative w-80 h-80 md:w-[28rem] md:h-[28rem] rounded-full flex items-center justify-center p-4 blinking-border shadow-[0_20px_50px_rgba(0,0,0,0.1)]">
             
             <div className="w-full h-full rounded-full bg-white overflow-hidden border-8 border-white shadow-inner flex items-center justify-center">
-              <img 
-                src={agentImage} 
-                alt="Doris Yuenva Benson" 
-                className="w-full h-full object-cover transform transition-transform duration-1000 hover:scale-110 grayscale-0 hover:grayscale-0"
-                onError={(e) => { 
-                    e.target.src = "/oat.png"; // Fallback if DB link breaks
-                }}
-              />
+              {/* Only show the image if it exists in your database */}
+              {agentImage && (
+                <img 
+                  src={agentImage} 
+                  alt="Doris Yuenva Benson" 
+                  className="w-full h-full object-cover transform transition-transform duration-1000 hover:scale-110 grayscale-0 hover:grayscale-0"
+                />
+              )}
             </div>
 
             <div className="absolute -bottom-4 -right-2 md:right-8 bg-cac-blue text-white px-8 py-3 rounded-full shadow-2xl font-black text-sm animate-bounce tracking-[0.3em] border-2 border-white uppercase">

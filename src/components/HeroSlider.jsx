@@ -1,45 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Loader, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { supabase } from '../SupabaseClient';
 
-const defaultSlides = [
-  {
-    image_url: "/banner1.jpg",
-    title: "Fast & Reliable CAC Registration",
-    subtitle: "Get your Business Name or Company registered in record time."
-  },
-  {
-    image_url: "/banner2.jpg",
-    title: "Expert Trademark Protection",
-    subtitle: "Secure your brand identity with our professional legal filing."
-  },
-  {
-    image_url: "/banner3.jpg",
-    title: "NGO & Foundation Setup",
-    subtitle: "We handle the complex trusteeship paperwork for you."
-  }
-];
-
 const HeroSlider = () => {
+  // Start with a default slide so something always renders
+  const [slides, setSlides] = useState([
+    {
+      id: 'default-1',
+      title: 'REX360 SOLUTIONS',
+      subtitle: 'Your Digital Partner for Success',
+      image_url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&h=1080&fit=crop'
+    }
+  ]);
+  
   const [current, setCurrent] = useState(0);
-  const [slides, setSlides] = useState(defaultSlides);
   const [loading, setLoading] = useState(true);
+  const timerRef = useRef(null);
 
-  // 1. Fetch Slides from Supabase
+  // Fetch slides from Supabase
   useEffect(() => {
     const fetchSlides = async () => {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('hero_slides')
           .select('*')
           .order('id', { ascending: true });
 
-        if (data && data.length > 0) {
+        if (error) {
+          console.error("Supabase Error:", error.message);
+          // Keep default slide if there's an error
+        } else if (data && data.length > 0) {
           setSlides(data);
         }
       } catch (err) {
-        console.error("Error loading slides:", err);
+        console.error("Failed to fetch slides:", err);
+        // Keep default slide on any error
       } finally {
         setLoading(false);
       }
@@ -48,106 +44,89 @@ const HeroSlider = () => {
     fetchSlides();
   }, []);
 
-  // 2. Auto-display logic
+  // Auto-advance slides
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrent((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [current, slides.length]);
+    if (slides.length <= 1) return;
 
-  const nextSlide = () => setCurrent(current === slides.length - 1 ? 0 : current + 1);
-  const prevSlide = () => setCurrent(current === 0 ? slides.length - 1 : current - 1);
+    timerRef.current = setInterval(() => {
+      setCurrent((prev) => (prev >= slides.length - 1 ? 0 : prev + 1));
+    }, 5000);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [slides.length]);
 
   return (
-    // FIX 1: Taller height for "Suite" look (500px mobile, 85% screen desktop)
-    <div className="relative h-[500px] md:h-[85vh] w-full overflow-hidden bg-slate-900 group">
-      
-      {loading && (
-        <div className="absolute inset-0 z-50 bg-slate-900 flex items-center justify-center">
-          <Loader className="animate-spin text-cac-green" size={40} />
-        </div>
-      )}
-
-      {slides.map((slide, index) => (
-        <div
-          key={index}
-          className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-            index === current ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          {/* FIX 2: Image Fitting - object-center keeps the focus in the middle */}
-          <img
-            src={slide.image_url} 
-            alt={slide.title}
-            className="h-full w-full object-cover object-center" 
-            onError={(e) => { e.target.src = "https://via.placeholder.com/1600x800?text=Rex360+Solutions+Banner" }}
-          />
-
-          {/* FIX 3: Professional Gradient Overlay (Better than flat black) */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/30 z-10" />
-
-          {/* Text Content - Perfectly Centered & Moderate Sizes */}
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-6 md:px-12">
-            <div className={`transition-all duration-700 transform ${index === current ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-                
-                {/* 1. COMPANY BADGE (Small & Elegant) */}
-                <span className="inline-block py-1 px-4 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-cac-green text-xs md:text-sm font-bold tracking-[0.2em] uppercase mb-6">
-                  REX360 Solutions
-                </span>
-
-                {/* 2. MAIN TITLE (Moderate Size - Not too huge) */}
-                <h1 className="text-white text-3xl md:text-5xl lg:text-6xl font-black mb-6 leading-tight max-w-4xl mx-auto drop-shadow-xl">
+    <section className="w-full bg-white py-4 md:py-8 px-4 md:px-12 lg:px-24">
+      <h1>Hero Slider Component</h1>
+      <div className="max-w-[1200px] mx-auto relative overflow-hidden rounded-[24px] md:rounded-[45px] shadow-2xl aspect-video w-full bg-slate-200">
+        
+        {slides.map((slide, index) => (
+          <div
+            key={slide.id}
+            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+              index === current ? "opacity-100 z-10" : "opacity-0 z-0"
+            }`}
+          >
+            {/* Image Layer */}
+            <img
+              src={slide.image_url}
+              alt={slide.title || 'Hero Slide'}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                console.error("Image failed to load:", slide.image_url);
+                e.target.src = 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&h=1080&fit=crop';
+              }}
+            />
+            
+            {/* Overlay with Content */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50 flex items-center justify-center text-center p-6 z-20">
+              <div className="max-w-3xl space-y-6">
+                <h1 className="text-white text-3xl md:text-5xl lg:text-6xl font-black drop-shadow-2xl">
                   {slide.title}
                 </h1>
-
-                {/* 3. SUBTITLE (Readable & Clean) */}
-                <p className="text-slate-200 text-base md:text-lg max-w-2xl mx-auto font-medium leading-relaxed mb-8 opacity-90">
+                <p className="text-white/95 text-base md:text-xl lg:text-2xl font-semibold drop-shadow-lg">
                   {slide.subtitle}
                 </p>
-
-                {/* 4. BUTTON (Professional Pill Shape) */}
-                <Link to="/register/Business Name">
-                    <button className="bg-cac-green hover:bg-green-600 text-white px-8 py-3 md:px-10 md:py-4 rounded-full font-bold text-sm md:text-base transition-all transform hover:scale-105 shadow-lg flex items-center gap-2 mx-auto">
-                      GET STARTED <ArrowRight size={18} />
-                    </button>
+                <Link to="/register">
+                  <button className="bg-[#008751] hover:bg-[#006d40] text-white px-8 md:px-10 py-3 md:py-4 rounded-full font-bold uppercase transition-all duration-300 hover:scale-105 hover:shadow-xl flex items-center gap-2 md:gap-3 mx-auto text-sm md:text-base">
+                    Get Started <ArrowRight size={20} />
+                  </button>
                 </Link>
+              </div>
             </div>
           </div>
-        </div>
-      ))}
-
-      {/* Navigation Arrows (Hidden on mobile for cleaner look, Visible on Desktop) */}
-      {slides.length > 1 && (
-        <>
-            <button 
-                onClick={prevSlide}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-all hidden md:block"
-            >
-                <ChevronLeft size={28} />
-            </button>
-            <button 
-                onClick={nextSlide}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-all hidden md:block"
-            >
-                <ChevronRight size={28} />
-            </button>
-        </>
-      )}
-
-      {/* Slide Indicators (Dots) */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex space-x-3">
-        {slides.map((_, idx) => (
-            <button
-                key={idx}
-                onClick={() => setCurrent(idx)}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                    idx === current ? "bg-cac-green w-8" : "bg-white/40 w-2 hover:bg-white"
-                }`}
-            />
         ))}
+
+        {/* Slide Indicators */}
+        {slides.length > 1 && (
+          <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2 z-30">
+            {slides.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrent(index)}
+                className={`w-2 h-2 md:w-3 md:h-3 rounded-full transition-all duration-300 ${
+                  index === current 
+                    ? 'bg-white w-8 md:w-12' 
+                    : 'bg-white/50 hover:bg-white/75'
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
+        )}
+        
+        {/* Loading State */}
+        {loading && (
+          <div className="absolute inset-0 bg-slate-200 flex items-center justify-center z-5">
+            <div className="animate-pulse text-slate-500 text-lg">Loading...</div>
+          </div>
+        )}
       </div>
-    </div>
+    </section>
   );
 };
 
