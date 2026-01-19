@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+
 import { supabase } from '../SupabaseClient'; // Connect to Admin Data
 
 const AgentIntro = () => {
@@ -6,6 +7,7 @@ const AgentIntro = () => {
   const [agentImage, setAgentImage] = useState(''); 
 
   // 2. Fetch the "Real" photo from Supabase
+  
   useEffect(() => {
     const fetchAgentPhoto = async () => {
       const { data } = await supabase

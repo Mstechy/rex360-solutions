@@ -9,7 +9,8 @@ import FloatingContact from './components/FloatingContact.jsx';
 
 // 2. HOMEPAGE SECTIONS
 import HeroSlider from './components/HeroSlider.jsx';
-import AgentIntro from './components/Agentintro.jsx'; 
+// We are using AgentIntro (Capital I)
+import AgentIntro from './components/AgentIntro.jsx'; 
 import ServicesSection from './components/ServicesSection.jsx';
 import NewsSection from './components/NewsSection.jsx';
 import FAQ from './components/FAQ.jsx';
@@ -31,7 +32,7 @@ function App() {
 
         <main className="flex-grow">
           <Routes>
-            {/* HOME ROUTE - ALL SECTIONS PRESERVED */}
+            {/* HOME ROUTE */}
             <Route path="/" element={
               <div className="flex flex-col">
                 <HeroSlider />
@@ -51,8 +52,6 @@ function App() {
             
             {/* OTHER PAGES */}
             <Route path="/news" element={<NewsPage />} />
-            
-            {/* ADMIN ROUTES - FIXING CONNECTION */}
             <Route path="/admin" element={<AdminLogin />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
 
