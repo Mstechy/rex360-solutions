@@ -30,7 +30,8 @@ function App() {
       <div className="flex flex-col min-h-screen bg-white relative">
         <Navbar />
 
-        <main className="flex-grow">
+        {/* Added padding-top to ensure the HeroSlider is not hidden behind the Navbar */}
+        <main className="flex-grow pt-[70px] md:pt-[90px]">
           <Routes>
             {/* HOME ROUTE */}
             <Route path="/" element={
