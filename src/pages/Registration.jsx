@@ -133,9 +133,9 @@ const Registration = () => {
   const currentPrice = prices[serviceType] || 0; 
   const config = {
     reference: (new Date()).getTime().toString(),
-    email: "rex360solutions@gmail.com",
-    amount: currentPrice * 100,
-    publicKey: 'pk_live_08ddf326f45872fd52bbaafda8e14863b37bd00b',
+    email: getValue('email') || "test-customer@example.com", // Dynamic email from form
+    amount: currentPrice * 100, // Amount in kobo
+    publicKey: 'pk_test_1dc8f242ed09075faee33e86dff64ce401918129', // Your Test Key
   };
   const initializePayment = usePaystackPayment(config);
 
