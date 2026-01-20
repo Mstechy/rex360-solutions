@@ -9,7 +9,6 @@ import FloatingContact from './components/FloatingContact.jsx';
 
 // 2. HOMEPAGE SECTIONS
 import HeroSlider from './components/HeroSlider.jsx';
-// We are using AgentIntro (Capital I)
 import AgentIntro from './components/AgentIntro.jsx'; 
 import ServicesSection from './components/ServicesSection.jsx';
 import NewsSection from './components/NewsSection.jsx';
@@ -30,8 +29,8 @@ function App() {
       <div className="flex flex-col min-h-screen bg-white relative">
         <Navbar />
 
-        {/* Added padding-top to ensure the HeroSlider is not hidden behind the Navbar */}
-        <main className="flex-grow pt-[70px] md:pt-[90px]">
+        {/* ONLY FIX: Changed mobile padding from 70px to 85px to clear the logo on phones */}
+        <main className="flex-grow pt-[85px] md:pt-[90px]">
           <Routes>
             {/* HOME ROUTE */}
             <Route path="/" element={
