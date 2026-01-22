@@ -6,6 +6,7 @@ import { Upload, CheckCircle, MessageCircle, ArrowRight, Loader, X, ArrowLeft, B
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { supabase, testSupabaseConnection } from '../SupabaseClient';
+import { getValue } from '../utils';
 
 // --- 1. HUGE LIST OF BUSINESS CATEGORIES (100% PRESERVED) ---
 const BUSINESS_CATEGORIES = {
