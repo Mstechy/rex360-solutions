@@ -38,7 +38,15 @@ const Registration = () => {
   
   const [category, setCategory] = useState('');
   const [nature, setNature] = useState('');
-  
+
+  // Form data state
+  const [formData, setFormData] = useState({
+    surname: '',
+    firstname: '',
+    email: '',
+    phone: ''
+  });
+
   // Connection and status tracking
   const [uploadStatus, setUploadStatus] = useState(null); // null, uploading, success, error
   const [statusMessage, setStatusMessage] = useState('');
@@ -129,9 +137,12 @@ const Registration = () => {
 
   const saveToDatabase = async (reference) => {
     console.log('🔵 Starting saveToDatabase...', { reference, serviceType, currentPrice });
-    
+
     // Helper to get values from the form inputs
-    const getVal = (id) => document.getElementById(id)?.value || '';
+    const getFormValue = (id) => {
+      const element = document.getElementById(id);
+      return element ? element.value : '';
+    };
 
     const allInputs = document.querySelectorAll('input, select, textarea');
     const fullDetails = {};
@@ -222,10 +233,10 @@ const Registration = () => {
         // Save registration to database
         const registrationData = {
             service_type: serviceType,
-            surname: getVal('surname'),
-            firstname: getVal('firstname'),
-            phone: getVal('phone'),
-            email: getVal('email'),
+            surname: getFormValue('surname'),
+            firstname: getFormValue('firstname'),
+            phone: getFormValue('phone'),
+            email: getFormValue('email'),
             amount: currentPrice || 0,  // USE CURRENT PRICE - FIX FOR DATA SAVING
             paystack_ref: reference,
             payment_status: 'paid',  // Set to paid after successful payment
@@ -255,14 +266,27 @@ const Registration = () => {
     }
   };
 
-  // Corrected Paystack Config
-  const config = {
+  // Paystack Config - moved inside component to avoid build issues
+  const [paystackConfig, setPaystackConfig] = useState({
     reference: (new Date()).getTime().toString(),
-    email: document.getElementById('email')?.value || "customer@example.com",
-    amount: currentPrice * 100,
+    email: "customer@example.com",
+    amount: 0,
     publicKey: 'pk_test_1dc8f242ed09075faee33e86dff64ce401918129',
-  };
-  const initializePayment = usePaystackPayment(config);
+  });
+
+  // Update config when price changes
+  useEffect(() => {
+    const emailElement = document.getElementById('email');
+    const email = emailElement?.value || "customer@example.com";
+    setPaystackConfig({
+      reference: (new Date()).getTime().toString(),
+      email: email,
+      amount: currentPrice * 100,
+      publicKey: 'pk_test_1dc8f242ed09075faee33e86dff64ce401918129',
+    });
+  }, [currentPrice]);
+
+  const initializePayment = usePaystackPayment(paystackConfig);
 
   const handleProcess = (e) => {
     e.preventDefault();
@@ -639,7 +663,7 @@ const Registration = () => {
   }
 
   return (
-    <div className="pt-32 pb-20 px-4 min-h-screen bg-slate-50">
+    <div className="pt-20 pb-10 px-2 md:px-4 min-h-screen bg-slate-50">
       {/* PROCESSING OVERLAY - Simple and clean */}
       {uploadStatus === 'uploading' && step !== 'success' && (
         <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center backdrop-blur-sm">
@@ -679,50 +703,75 @@ const Registration = () => {
         </button>
       </div>
 
-      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
-        <div className="lg:w-1/3 space-y-4">
-          <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* MOBILE: Service Selection First */}
+        <div className="lg:hidden">
+          <div className="bg-white p-4 rounded-2xl shadow-xl border border-slate-100">
             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 px-2">Select Registration Type</h3>
-            <div className="space-y-2 mb-6">
+            <div className="grid grid-cols-2 gap-2 mb-4">
               {Object.keys(prices).map((name) => (
                 <button
                   key={name}
                   onClick={() => { setServiceType(name); navigate(`/register/${name.replace(/\s+/g, '-')}`); }}
-                  className={`w-full text-left px-5 py-4 rounded-xl font-bold text-sm transition-all ${
+                  className={`text-left px-3 py-3 rounded-xl font-bold text-xs transition-all ${
                     serviceType === name ? 'bg-cac-blue text-white shadow-lg' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <Briefcase size={16} className={serviceType === name ? "text-cac-green" : "opacity-20"} />
-                    {name}
+                  <div className="flex items-center gap-2">
+                    <Briefcase size={14} className={serviceType === name ? "text-cac-green" : "opacity-20"} />
+                    <span className="truncate">{name}</span>
                   </div>
                 </button>
               ))}
             </div>
-
-            {/* SIDEBAR SUPPORT & ACCREDITATION - ADDED BELOW LIST */}
-            <div className="pt-6 border-t border-slate-100 space-y-4">
-               <a href="https://wa.me/2349048349548" className="flex items-center gap-3 p-4 bg-[#25D366]/10 text-[#25D366] rounded-2xl hover:bg-[#25D366]/20 transition-all">
-                  <div className="p-2 bg-[#25D366] text-white rounded-full"><MessageCircle size={16}/></div>
-                  <div className="leading-none">
-                    <p className="text-[10px] font-black uppercase">Need Help?</p>
-                    <p className="text-sm font-bold">Chat with Support</p>
-                  </div>
-               </a>
-               <div className="p-4 bg-cac-blue/5 rounded-2xl border border-cac-blue/10 flex items-start gap-3">
-                  <ShieldCheck size={24} className="text-cac-blue shrink-0" />
-                  <div>
-                    <p className="text-[10px] font-black uppercase text-cac-blue">Accredited Agent</p>
-                    <p className="text-[10px] font-bold text-slate-500 leading-tight mt-1">
-                      Official CAC Accreditation Filing Service. Secure & Verified.
-                    </p>
-                  </div>
-               </div>
-            </div>
           </div>
         </div>
 
-        <div className="lg:w-2/3">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* DESKTOP: Sidebar */}
+          <div className="hidden lg:block lg:w-1/3">
+            <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100 sticky top-24">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 px-2">Select Registration Type</h3>
+              <div className="space-y-2 mb-6">
+                {Object.keys(prices).map((name) => (
+                  <button
+                    key={name}
+                    onClick={() => { setServiceType(name); navigate(`/register/${name.replace(/\s+/g, '-')}`); }}
+                    className={`w-full text-left px-5 py-4 rounded-xl font-bold text-sm transition-all ${
+                      serviceType === name ? 'bg-cac-blue text-white shadow-lg' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Briefcase size={16} className={serviceType === name ? "text-cac-green" : "opacity-20"} />
+                      {name}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* SIDEBAR SUPPORT & ACCREDITATION */}
+              <div className="pt-6 border-t border-slate-100 space-y-4">
+                 <a href="https://wa.me/2349048349548" className="flex items-center gap-3 p-4 bg-[#25D366]/10 text-[#25D366] rounded-2xl hover:bg-[#25D366]/20 transition-all">
+                    <div className="p-2 bg-[#25D366] text-white rounded-full"><MessageCircle size={16}/></div>
+                    <div className="leading-none">
+                      <p className="text-[10px] font-black uppercase">Need Help?</p>
+                      <p className="text-sm font-bold">Chat with Support</p>
+                    </div>
+                 </a>
+                 <div className="p-4 bg-cac-blue/5 rounded-2xl border border-cac-blue/10 flex items-start gap-3">
+                    <ShieldCheck size={24} className="text-cac-blue shrink-0" />
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-cac-blue">Accredited Agent</p>
+                      <p className="text-[10px] font-bold text-slate-500 leading-tight mt-1">
+                        Official CAC Accreditation Filing Service. Secure & Verified.
+                      </p>
+                    </div>
+                 </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:w-2/3">
           <div className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100">
             <div className="bg-cac-blue p-8 text-white flex justify-between items-center">
               <div>
@@ -857,6 +906,7 @@ const Registration = () => {
                 )}
               </button>
             </form>
+          </div>
           </div>
         </div>
       </div>
