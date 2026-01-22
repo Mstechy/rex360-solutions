@@ -4,7 +4,7 @@ import { usePaystackPayment } from 'react-paystack';
 import { Upload, CheckCircle, MessageCircle, ArrowRight, Loader, X, ArrowLeft, Briefcase, ShieldCheck } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { supabase } from '../SupabaseClient'; 
+import { supabase, testSupabaseConnection } from '../SupabaseClient'; 
 
 // --- 1. HUGE LIST OF BUSINESS CATEGORIES (100% PRESERVED) ---
 const BUSINESS_CATEGORIES = {
@@ -38,11 +38,35 @@ const Registration = () => {
   
   const [category, setCategory] = useState('');
   const [nature, setNature] = useState('');
+  
+  // Connection and status tracking
+  const [uploadStatus, setUploadStatus] = useState(null); // null, uploading, success, error
+  const [statusMessage, setStatusMessage] = useState('');
+  const [countdown, setCountdown] = useState(5);
+
+  // Countdown timer effect - runs only when step is 'success'
+  useEffect(() => {
+    if (step !== 'success') return;
+
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [step]);
 
   useEffect(() => {
     const fetchPrices = async () => {
-      const { data } = await supabase.from('services').select('name, price');
-      if (data) {
+      const { data, error } = await supabase.from('services').select('name, price');
+      if (error) {
+        console.error("Error loading service fees");
+      } else if (data) {
         const priceMap = {};
         data.forEach(item => {
           let name = item.name;
@@ -53,6 +77,7 @@ const Registration = () => {
         setLoading(false);
       }
     };
+    
     fetchPrices();
   }, []);
 
@@ -100,8 +125,14 @@ const Registration = () => {
     } catch (err) { console.error("PDF Failed", err); }
   };
 
+  const currentPrice = prices[serviceType] || 0;
+
   const saveToDatabase = async (reference) => {
-    const getValue = (id) => document.getElementById(id)?.value || '';
+    console.log('🔵 Starting saveToDatabase...', { reference, serviceType, currentPrice });
+    
+    // Helper to get values from the form inputs
+    const getVal = (id) => document.getElementById(id)?.value || '';
+
     const allInputs = document.querySelectorAll('input, select, textarea');
     const fullDetails = {};
     allInputs.forEach(input => {
@@ -109,62 +140,212 @@ const Registration = () => {
             fullDetails[input.id] = input.value;
         }
     });
+
+    // Explicitly ensure Annual Returns fields are captured
     fullDetails['business_category'] = category;
     fullDetails['business_nature'] = nature;
+
     try {
         const documentUrls = {};
-        for (const key of Object.keys(files)) {
-            const uploadPromises = files[key].map(async (file, i) => {
-                const path = `${key}/${Date.now()}_${i}_${file.name}`;
-                const { error: uploadErr } = await supabase.storage.from('documents').upload(path, file);
-                if (uploadErr) throw uploadErr;
-                const { data } = supabase.storage.from('documents').getPublicUrl(path);
-                return data.publicUrl;
-            });
-            documentUrls[key] = await Promise.all(uploadPromises);
+        
+        // Check if files exist
+        const hasFiles = Object.values(files).some(arr => arr.length > 0);
+        if (!hasFiles) {
+          console.log('📋 No files provided - creating empty document URLs');
+          documentUrls['ID Card'] = [];
+          documentUrls['Signature'] = [];
+          documentUrls['Passport'] = [];
         }
-        const { error } = await supabase.from('registrations').insert([
-            { service_type: serviceType, surname: getValue('surname'), firstname: getValue('firstname'), phone: getValue('phone'), email: getValue('email'), amount: currentPrice, paystack_ref: reference, full_details: { ...fullDetails, uploaded_docs: documentUrls } }
-        ]);
-        if (error) throw error;
-    } catch (err) { throw err; }
+        
+        // Upload documents with detailed logging
+        console.log('📤 Starting document uploads...');
+        
+        for (const key of Object.keys(files)) {
+            console.log(`📁 Processing ${key}:`, files[key].length, 'files');
+            
+            if (files[key].length === 0) {
+                console.log(`⏭️  Skipping ${key} - no files`);
+                documentUrls[key] = [];
+                continue;
+            }
+            
+            const uploadPromises = files[key].map(async (file, i) => {
+                try {
+                    const timestamp = Date.now();
+                    const randomStr = Math.random().toString(36).substring(7);
+                    const fileExt = file.name.split('.').pop() || 'unknown';
+                    const fileName = `${timestamp}_${i}_${randomStr}.${fileExt}`;
+                    const path = `documents/${key}/${fileName}`;
+                    
+                    console.log(`⬆️  Uploading ${key} (${i+1}):`, fileName);
+                    
+                    const { data: uploadData, error: uploadErr } = await supabase.storage
+                        .from('documents')
+                        .upload(path, file, { upsert: false });
+                    
+                    if (uploadErr) {
+                        console.error(`❌ Upload error for ${key}:`, uploadErr.message);
+                        throw new Error(`Failed to upload ${key}: ${uploadErr.message}`);
+                    }
+                    
+                    console.log(`✅ ${key} uploaded successfully:`, path);
+                    
+                    const { data: urlData } = supabase.storage
+                        .from('documents')
+                        .getPublicUrl(path);
+                    
+                    if (!urlData || !urlData.publicUrl) {
+                      throw new Error(`Could not get public URL for ${path}`);
+                    }
+                    
+                    console.log(`🔗 Public URL generated:`, urlData.publicUrl);
+                    return urlData.publicUrl;
+                    
+                } catch (fileErr) {
+                    console.error(`💥 Document upload failed:`, fileErr.message);
+                    throw fileErr;
+                }
+            });
+            
+            try {
+              const uploadedUrls = await Promise.all(uploadPromises);
+              documentUrls[key] = uploadedUrls;
+              console.log(`✅ ${key} complete:`, uploadedUrls.length, 'files uploaded');
+            } catch (uploadErr) {
+              console.error(`❌ Failed to upload ${key}:`, uploadErr.message);
+              throw new Error(`Document upload failed for ${key}: ${uploadErr.message}`);
+            }
+        }
+        
+        console.log('✅ All documents uploaded:', documentUrls);
+
+        // Save registration to database
+        const registrationData = {
+            service_type: serviceType,
+            surname: getVal('surname'),
+            firstname: getVal('firstname'),
+            phone: getVal('phone'),
+            email: getVal('email'),
+            amount: currentPrice || 0,  // USE CURRENT PRICE - FIX FOR DATA SAVING
+            paystack_ref: reference,
+            payment_status: 'paid',  // Set to paid after successful payment
+            full_details: { ...fullDetails, uploaded_docs: documentUrls }
+        };
+        
+        console.log('💾 Saving registration data:', registrationData);
+        
+        const { data: insertData, error } = await supabase
+            .from('registrations')
+            .insert([registrationData]);
+        
+        if (error) {
+            console.error('❌ Supabase Error:', error);
+            throw new Error(`Registration Error: ${error.message}`);
+        }
+        
+        console.log('✅ Registration saved successfully:', insertData);
+        setUploadStatus('success');
+        setStatusMessage('');
+        return insertData;
+        
+    } catch (err) {
+      setUploadStatus('error');
+      setStatusMessage('');
+      throw new Error(`Registration save failed: ${err.message}`);
+    }
   };
 
-  const currentPrice = prices[serviceType] || 0; 
+  // Corrected Paystack Config
   const config = {
     reference: (new Date()).getTime().toString(),
-    email: getValue('email') || "test-customer@example.com", // Dynamic email from form
-    amount: currentPrice * 100, // Amount in kobo
-    publicKey: 'pk_test_1dc8f242ed09075faee33e86dff64ce401918129', // Your Test Key
+    email: document.getElementById('email')?.value || "customer@example.com",
+    amount: currentPrice * 100,
+    publicKey: 'pk_test_1dc8f242ed09075faee33e86dff64ce401918129',
   };
   const initializePayment = usePaystackPayment(config);
 
   const handleProcess = (e) => {
     e.preventDefault();
+    
+    // Validate price
+    if (currentPrice === 0) {
+        alert("Service fee information is loading. Please try again.");
+        return;
+    }
+    
+    // Check for missing documents
     const missingDocs = Object.keys(files).filter(doc => files[doc].length === 0);
     if (missingDocs.length > 0) {
-        alert(`Missing Documents:\n\nPlease upload your: ${missingDocs.join(', ')}`);
+        alert(`Please provide your ${missingDocs.join(', ')}`);
         return; 
     }
-    if (currentPrice === 0) return alert("Price loading...");
-    initializePayment(async (response) => {
+    
+    // Validate form fields
+    const requiredFields = ['surname', 'firstname', 'email', 'phone'];
+    const missingFields = requiredFields.filter(field => {
+      const val = document.getElementById(field)?.value;
+      return !val;
+    });
+    
+    if (missingFields.length > 0) {
+        alert(`Please complete all required fields`);
+        return;
+    }
+    
+    // Clean submission - no technical messages
+    initializePayment({
+      onSuccess: async (reference) => {
+        setUploadStatus('uploading');
+        setStatusMessage('Processing your registration...');
+        
         try {
-            await saveToDatabase(response.reference);
-            generatePDF();
-            setStep('success');
-        } catch (error) { alert("Payment Successful, but error saving data"); }
-      }, () => alert("Payment Cancelled")
-    );
+          await saveToDatabase(reference.reference);
+          
+          // Clear form silently
+          setFiles({ "ID Card": [], "Signature": [], "Passport": [] });
+          setPreviews({ "ID Card": [], "Signature": [], "Passport": [] });
+          setCategory('');
+          setNature('');
+          
+          const form = document.querySelector('form');
+          if (form) form.reset();
+          
+          document.querySelectorAll('input[type="text"]').forEach(input => input.value = '');
+          document.querySelectorAll('input[type="email"]').forEach(input => input.value = '');
+          document.querySelectorAll('input[type="date"]').forEach(input => input.value = '');
+          document.querySelectorAll('input[type="file"]').forEach(input => input.value = '');
+          document.querySelectorAll('textarea').forEach(ta => ta.value = '');
+          document.querySelectorAll('select').forEach(sel => sel.selectedIndex = 0);
+          
+          Object.values(previews).forEach(urls => {
+            urls.forEach(url => URL.revokeObjectURL(url));
+          });
+          
+          setUploadStatus('success');
+          setStatusMessage('');
+          setStep('success');
+        } catch (err) {
+          setUploadStatus('error');
+          setStatusMessage('');
+          alert(`Registration error. Please contact support if this persists.`);
+        }
+      },
+      onClose: () => {
+        setUploadStatus(null);
+        setStatusMessage('');
+        alert("Payment not completed. Your registration was not submitted.");
+      }
+    });
   };
 
   const NatureOfBusinessSelector = () => (
     <div className="md:col-span-2 space-y-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
         <label className="text-[10px] font-black uppercase text-slate-400">Nature of Business</label>
-        <select className="w-full p-4 rounded-xl font-bold text-slate-700 mb-2 border-2 border-white focus:border-cac-blue" value={category} onChange={(e) => { setCategory(e.target.value); setNature(''); }}>
+        <select id="business_category" className="w-full p-4 rounded-xl font-bold text-slate-700 mb-2 border-2 border-white focus:border-cac-blue" value={category} onChange={(e) => { setCategory(e.target.value); setNature(''); }}>
             <option value="">-- Select Business Category --</option>
             {Object.keys(BUSINESS_CATEGORIES).map(cat => ( <option key={cat} value={cat}>{cat}</option> ))}
         </select>
-        <select className="w-full p-4 rounded-xl font-bold text-slate-700 disabled:opacity-50 border-2 border-white focus:border-cac-blue" value={nature} onChange={(e) => setNature(e.target.value)} disabled={!category}>
+        <select id="business_nature" className="w-full p-4 rounded-xl font-bold text-slate-700 disabled:opacity-50 border-2 border-white focus:border-cac-blue" value={nature} onChange={(e) => setNature(e.target.value)} disabled={!category}>
             <option value="">-- Select Specific Activity --</option>
             {category && BUSINESS_CATEGORIES[category].map(item => ( <option key={item} value={item}>{item}</option> ))}
         </select>
@@ -197,27 +378,63 @@ const Registration = () => {
           <div className="space-y-6 p-6 bg-slate-50 rounded-3xl border border-slate-200">
              <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest">Company Info</h3>
              <div className="grid md:grid-cols-2 gap-4">
-                <input id="cmp-name1" placeholder="Company Name 1" className="p-4 rounded-xl border-none font-bold" required />
-                <input id="cmp-name2" placeholder="Company Name 2" className="p-4 rounded-xl border-none font-bold" required />
-                <input id="cmp-email" placeholder="Company Email" className="p-4 rounded-xl border-none font-bold" required />
+                <div>
+                  <label htmlFor="cmp-name1" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Company Name 1</label>
+                  <input id="cmp-name1" autoComplete="off" placeholder="Company Name 1" className="p-4 rounded-xl border-none font-bold w-full" required />
+                </div>
+                <div>
+                  <label htmlFor="cmp-name2" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Company Name 2</label>
+                  <input id="cmp-name2" autoComplete="off" placeholder="Company Name 2" className="p-4 rounded-xl border-none font-bold w-full" required />
+                </div>
+                <div>
+                  <label htmlFor="cmp-email" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Company Email</label>
+                  <input id="cmp-email" autoComplete="email" placeholder="Company Email" className="p-4 rounded-xl border-none font-bold w-full" required />
+                </div>
                 <NatureOfBusinessSelector />
                 <div className="md:col-span-2 space-y-2">
                    <label className="text-[10px] font-black uppercase text-slate-400">Company Address</label>
                    <div className="grid grid-cols-3 gap-2">
-                      <input id="b-state" placeholder="State" className="p-3 rounded-lg border-none" />
-                      <input id="b-lga" placeholder="LGA" className="p-3 rounded-lg border-none" />
-                      <input id="b-street" placeholder="Street/No" className="p-3 rounded-lg border-none" />
+                      <div>
+                        <label htmlFor="b-state" className="text-[9px] font-black text-slate-400 uppercase block mb-1">State</label>
+                        <input id="b-state" autoComplete="address-level1" placeholder="State" className="p-3 rounded-lg border-none w-full" />
+                      </div>
+                      <div>
+                        <label htmlFor="b-lga" className="text-[9px] font-black text-slate-400 uppercase block mb-1">LGA</label>
+                        <input id="b-lga" autoComplete="address-level2" placeholder="LGA" className="p-3 rounded-lg border-none w-full" />
+                      </div>
+                      <div>
+                        <label htmlFor="b-street" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Street</label>
+                        <input id="b-street" autoComplete="street-address" placeholder="Street/No" className="p-3 rounded-lg border-none w-full" />
+                      </div>
                    </div>
                 </div>
                 <div className="md:col-span-2 p-4 bg-white rounded-xl border border-blue-100">
                     <p className="text-xs font-black text-cac-blue mb-3 uppercase">Witness / Director Details</p>
                     <div className="grid md:grid-cols-2 gap-3">
-                      <input id="wit-surname" placeholder="Surname" className="p-3 bg-slate-50 rounded-lg" />
-                      <input id="wit-firstname" placeholder="First Name" className="p-3 bg-slate-50 rounded-lg" />
-                      <input id="wit-phone" placeholder="Phone" className="p-3 bg-slate-50 rounded-lg" />
-                      <input id="wit-nin" placeholder="NIN" className="p-3 bg-slate-50 rounded-lg" />
-                      <input id="wit-state" placeholder="State" className="p-3 bg-slate-50 rounded-lg" />
-                      <input id="wit-street" placeholder="Street Address" className="p-3 bg-slate-50 rounded-lg" />
+                      <div>
+                        <label htmlFor="wit-surname" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Surname</label>
+                        <input id="wit-surname" autoComplete="family-name" placeholder="Surname" className="p-3 bg-slate-50 rounded-lg w-full" />
+                      </div>
+                      <div>
+                        <label htmlFor="wit-firstname" className="text-[9px] font-black text-slate-400 uppercase block mb-1">First Name</label>
+                        <input id="wit-firstname" autoComplete="given-name" placeholder="First Name" className="p-3 bg-slate-50 rounded-lg w-full" />
+                      </div>
+                      <div>
+                        <label htmlFor="wit-phone" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Phone</label>
+                        <input id="wit-phone" autoComplete="tel" placeholder="Phone" className="p-3 bg-slate-50 rounded-lg w-full" />
+                      </div>
+                      <div>
+                        <label htmlFor="wit-nin" className="text-[9px] font-black text-slate-400 uppercase block mb-1">NIN</label>
+                        <input id="wit-nin" autoComplete="off" placeholder="NIN" className="p-3 bg-slate-50 rounded-lg w-full" />
+                      </div>
+                      <div>
+                        <label htmlFor="wit-state" className="text-[9px] font-black text-slate-400 uppercase block mb-1">State</label>
+                        <input id="wit-state" autoComplete="address-level1" placeholder="State" className="p-3 bg-slate-50 rounded-lg w-full" />
+                      </div>
+                      <div>
+                        <label htmlFor="wit-street" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Street Address</label>
+                        <input id="wit-street" autoComplete="street-address" placeholder="Street Address" className="p-3 bg-slate-50 rounded-lg w-full" />
+                      </div>
                     </div>
                 </div>
              </div>
@@ -228,14 +445,29 @@ const Registration = () => {
           <div className="space-y-6 p-6 bg-slate-50 rounded-3xl border border-slate-200">
              <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest">Trustees & Aims</h3>
              <div className="grid gap-4">
-                <input id="ngo-name1" placeholder="Proposed NGO Name 1" className="p-4 rounded-xl border-none font-bold" />
+                <div>
+                  <label htmlFor="ngo-name1" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Proposed NGO Name</label>
+                  <input id="ngo-name1" autoComplete="off" placeholder="Proposed NGO Name 1" className="p-4 rounded-xl border-none font-bold w-full" />
+                </div>
                 <NatureOfBusinessSelector />
-                <input id="ngo-tenure" placeholder="Trustees Tenure (e.g. 20 Years)" className="p-4 rounded-xl border-none font-bold" />
-                <input id="ngo-address" placeholder="NGO Full Address" className="p-4 rounded-xl border-none font-bold" />
+                <div>
+                  <label htmlFor="ngo-tenure" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Trustees Tenure</label>
+                  <input id="ngo-tenure" autoComplete="off" placeholder="Trustees Tenure (e.g. 20 Years)" className="p-4 rounded-xl border-none font-bold w-full" />
+                </div>
+                <div>
+                  <label htmlFor="ngo-address" className="text-[9px] font-black text-slate-400 uppercase block mb-1">NGO Full Address</label>
+                  <input id="ngo-address" autoComplete="street-address" placeholder="NGO Full Address" className="p-4 rounded-xl border-none font-bold w-full" />
+                </div>
                 <div className="space-y-2">
                    <label className="text-[10px] font-black uppercase text-slate-400">Aims & Objectives</label>
-                   <input id="ngo-aim1" placeholder="1. Aim..." className="w-full p-3 rounded-lg border-none mb-2" />
-                   <input id="ngo-aim2" placeholder="2. Aim..." className="w-full p-3 rounded-lg border-none" />
+                   <div>
+                     <label htmlFor="ngo-aim1" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Aim 1</label>
+                     <input id="ngo-aim1" autoComplete="off" placeholder="1. Aim..." className="w-full p-3 rounded-lg border-none mb-2" />
+                   </div>
+                   <div>
+                     <label htmlFor="ngo-aim2" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Aim 2</label>
+                     <input id="ngo-aim2" autoComplete="off" placeholder="2. Aim..." className="w-full p-3 rounded-lg border-none" />
+                   </div>
                 </div>
              </div>
           </div>
@@ -244,9 +476,18 @@ const Registration = () => {
         return (
           <div className="space-y-6 p-6 bg-slate-50 rounded-3xl border border-slate-200">
              <div className="grid gap-4">
-                <input id="exp-rc" placeholder="RC Number" className="p-4 rounded-xl border-none font-bold" />
-                <input id="exp-tin" placeholder="Tax Identification Number (TIN)" className="p-4 rounded-xl border-none font-bold" />
-                <input id="exp-bank" placeholder="Corporate Bank Account Details" className="p-4 rounded-xl border-none font-bold" />
+                <div>
+                  <label htmlFor="exp-rc" className="text-[9px] font-black text-slate-400 uppercase block mb-1">RC Number</label>
+                  <input id="exp-rc" autoComplete="off" placeholder="RC Number" className="p-4 rounded-xl border-none font-bold w-full" />
+                </div>
+                <div>
+                  <label htmlFor="exp-tin" className="text-[9px] font-black text-slate-400 uppercase block mb-1">TIN</label>
+                  <input id="exp-tin" autoComplete="off" placeholder="Tax Identification Number (TIN)" className="p-4 rounded-xl border-none font-bold w-full" />
+                </div>
+                <div>
+                  <label htmlFor="exp-bank" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Bank Account</label>
+                  <input id="exp-bank" autoComplete="off" placeholder="Corporate Bank Account Details" className="p-4 rounded-xl border-none font-bold w-full" />
+                </div>
              </div>
           </div>
         );
@@ -255,16 +496,39 @@ const Registration = () => {
           <div className="space-y-6 p-6 bg-slate-50 rounded-3xl border border-slate-200">
              <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest">Trademark Details</h3>
              <div className="grid md:grid-cols-2 gap-4">
-                <input id="tm-name" placeholder="Proposed Trademark Name" className="p-4 rounded-xl border-none font-bold md:col-span-2" required />
+                <div className="md:col-span-2">
+                  <label htmlFor="tm-name" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Proposed Trademark Name</label>
+                  <input id="tm-name" autoComplete="off" placeholder="Proposed Trademark Name" className="p-4 rounded-xl border-none font-bold w-full" required />
+                </div>
                 <div className="md:col-span-2 space-y-2">
-                   <label className="text-[10px] font-black uppercase text-slate-400">Class of Goods/Services</label>
-                   <select id="tm-class" className="w-full p-4 rounded-xl border-none font-bold bg-white">
+                   <label htmlFor="tm-class" className="text-[10px] font-black uppercase text-slate-400">Class of Goods/Services</label>
+                   <select id="tm-class" autoComplete="off" className="w-full p-4 rounded-xl border-none font-bold bg-white">
                       <option value="">Select Class...</option>
                       <option value="Class 16 (Paper/Books)">Class 16 (Paper/Books)</option>
                       <option value="Class 25 (Clothing)">Class 25 (Clothing)</option>
                       <option value="Class 35 (Advertising/Business)">Class 35 (Advertising/Business)</option>
                       <option value="Other">Other</option>
                    </select>
+                </div>
+             </div>
+          </div>
+        );
+      case 'Annual Returns':
+        return (
+          <div className="space-y-6 p-6 bg-slate-50 rounded-3xl border border-slate-200">
+             <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest">Annual Returns Filing</h3>
+             <div className="grid gap-4">
+                <div>
+                  <label htmlFor="ann-rc" className="text-[9px] font-black text-slate-400 uppercase block mb-1">RC or Business Number</label>
+                  <input id="ann-rc" autoComplete="off" placeholder="RC Number or Business Number" className="p-4 rounded-xl border-none font-bold w-full" required />
+                </div>
+                <div>
+                  <label htmlFor="ann-year" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Year of Return</label>
+                  <input id="ann-year" autoComplete="off" placeholder="Year of Return (e.g. 2024)" className="p-4 rounded-xl border-none font-bold w-full" required />
+                </div>
+                <div>
+                  <label htmlFor="ann-notes" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Additional Notes</label>
+                  <textarea id="ann-notes" autoComplete="off" placeholder="Any changes in Directors or Address?" className="p-4 rounded-xl border-none font-bold h-24 w-full" />
                 </div>
              </div>
           </div>
@@ -277,19 +541,138 @@ const Registration = () => {
 
   if (step === 'success') {
     return (
-      <div className="pt-40 pb-20 px-8 text-center bg-white min-h-screen">
-        <CheckCircle size={80} className="text-cac-green mx-auto mb-6" />
-        <h1 className="text-4xl font-black text-cac-blue mb-4 uppercase">Submission Successful!</h1>
-        <p className="text-slate-600 mb-8 max-w-md mx-auto">Registration received. We will contact you shortly.</p>
-        <a href="https://wa.me/2349048349548" className="inline-flex items-center bg-[#25D366] text-white px-10 py-5 rounded-full font-black text-xl shadow-xl hover:scale-105 transition-transform">
-          <MessageCircle className="mr-2" /> CHAT ON WHATSAPP
-        </a>
+      <div className="pt-20 pb-20 px-8 text-center bg-gradient-to-br from-yellow-50 to-orange-50 min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
+        {/* Golden Celebration Sprinkles */}
+        <div className="absolute inset-0 pointer-events-none">
+          {[...Array(50)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute animate-bounce"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 3}s`,
+                animationDuration: `${2 + Math.random() * 2}s`
+              }}
+            >
+              <div className="w-2 h-2 bg-yellow-400 rounded-full opacity-60"></div>
+            </div>
+          ))}
+        </div>
+
+        <div className="max-w-2xl relative z-10">
+          <div className="mb-8 animate-bounce">
+            <CheckCircle size={120} className="text-green-600 mx-auto drop-shadow-lg" />
+          </div>
+
+          <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-3 uppercase bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">
+            🎉 CONGRATULATIONS! 🎉
+          </h1>
+          <p className="text-xl text-slate-600 mb-8 font-semibold">Your registration has been successfully completed!</p>
+
+          <div className="bg-white p-8 md:p-10 rounded-2xl shadow-2xl border border-yellow-200 mb-8">
+            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-6 rounded-xl border-l-4 border-yellow-500 mb-8">
+              <p className="text-lg font-black text-yellow-800 mb-2">✅ Payment Confirmed</p>
+              <p className="text-sm text-yellow-700">Your payment and registration have been successfully processed.</p>
+            </div>
+
+            <p className="text-base text-slate-700 mb-8 leading-relaxed">
+              Thank you for choosing Rex360 Solutions! Your documents and information have been securely recorded in our system.
+            </p>
+
+            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-6 rounded-xl border border-yellow-200 mb-8">
+              <p className="text-sm font-bold text-slate-700 mb-4">What happens next:</p>
+              <ul className="text-sm text-slate-700 space-y-3 text-left">
+                <li className="flex items-start gap-3"><span className="text-yellow-600 font-bold mt-0.5">⭐</span> Check your email for a confirmation message</li>
+                <li className="flex items-start gap-3"><span className="text-yellow-600 font-bold mt-0.5">⭐</span> Your application will be reviewed within 48 hours</li>
+                <li className="flex items-start gap-3"><span className="text-yellow-600 font-bold mt-0.5">⭐</span> You will receive updates via email and phone</li>
+                <li className="flex items-start gap-3"><span className="text-yellow-600 font-bold mt-0.5">⭐</span> Certificate will be available upon approval</li>
+              </ul>
+            </div>
+
+            {countdown > 0 ? (
+              <div className="text-center mb-6">
+                <p className="text-2xl font-black text-yellow-600 mb-4">
+                  We'll get back to you shortly...
+                </p>
+                <p className="text-lg font-semibold text-slate-600">
+                  Processing in <span className="text-green-600 font-bold">{countdown}</span> seconds...
+                </p>
+                <div className="mt-4 flex gap-1 justify-center">
+                  {[...Array(5)].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`h-2 w-8 rounded-full transition-all ${
+                        i < (5 - countdown) ? 'bg-yellow-500' : 'bg-slate-300'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center mb-6">
+                <p className="text-xl font-black text-green-600 mb-4">
+                  🎊 Ready to connect with our team! 🎊
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <a
+              href="https://wa.me/2349048349548"
+              className="inline-flex items-center bg-gradient-to-r from-green-500 to-green-600 text-white px-10 py-4 rounded-full font-black text-lg shadow-xl hover:scale-105 transition-all transform"
+            >
+              <MessageCircle className="mr-2" size={24} /> REACH OUT TO US HERE
+            </a>
+
+            <button
+              onClick={() => navigate('/')}
+              className="inline-flex items-center bg-slate-600 text-white px-10 py-4 rounded-full font-black text-lg shadow-xl hover:scale-105 transition-all transform"
+            >
+              BACK TO HOME
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="pt-32 pb-20 px-4 min-h-screen bg-slate-50">
+      {/* PROCESSING OVERLAY - Simple and clean */}
+      {uploadStatus === 'uploading' && step !== 'success' && (
+        <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center backdrop-blur-sm">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 text-center">
+            <div className="mb-6 flex justify-center">
+              <div className="w-16 h-16 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+            </div>
+            <h3 className="text-lg font-bold text-slate-800 mb-2">Processing Your Registration</h3>
+            <p className="text-sm text-slate-600">Please wait while we process your information...</p>
+          </div>
+        </div>
+      )}
+
+      {/* ERROR OVERLAY - Professional message only */}
+      {uploadStatus === 'error' && step !== 'success' && (
+        <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center backdrop-blur-sm">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 text-center">
+            <div className="mb-4 text-4xl">⚠️</div>
+            <h3 className="text-lg font-bold text-slate-800 mb-4">Registration Failed</h3>
+            <p className="text-sm text-slate-600 mb-6">An error occurred while processing your registration. Please try again.</p>
+            <button 
+              onClick={() => {
+                setUploadStatus(null);
+                setStatusMessage('');
+              }}
+              className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition-all"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto mb-6">
         <button onClick={() => navigate('/')} className="flex items-center gap-2 text-slate-500 hover:text-cac-blue font-black text-xs uppercase transition-all">
           <ArrowLeft size={16} /> Back to Home
@@ -358,17 +741,38 @@ const Registration = () => {
                     {serviceType === 'NGO Registration' ? 'Chairman Details' : 'Personal Information'}
                 </h3>
                 <div className="grid md:grid-cols-3 gap-4">
-                   <input id="surname" placeholder="Surname" className="p-4 bg-slate-50 rounded-xl font-bold" required />
-                   <input id="firstname" placeholder="First Name" className="p-4 bg-slate-50 rounded-xl font-bold" required />
-                   <input id="othername" placeholder="Other Name" className="p-4 bg-slate-50 rounded-xl font-bold" />
-                   <div className="relative">
-                     <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">Date of Birth</label>
-                     <input id="dob" type="date" className="w-full p-4 bg-slate-50 rounded-xl font-bold" required />
+                   <div>
+                     <label htmlFor="surname" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Surname</label>
+                     <input id="surname" autoComplete="family-name" placeholder="Surname" className="p-4 bg-slate-50 rounded-xl font-bold w-full" required />
                    </div>
-                   <select id="gender" className="p-4 bg-slate-50 rounded-xl font-bold"><option>Male</option><option>Female</option></select>
-                   <input id="email" type="email" placeholder="Email Address" className="p-4 bg-slate-50 rounded-xl font-bold md:col-span-2" required />
-                   <input id="phone" placeholder="Phone Number" className="p-4 bg-slate-50 rounded-xl font-bold" required />
-                   <input id="nin" placeholder="NIN (11 Digits)" className="p-4 bg-slate-50 rounded-xl font-bold" required />
+                   <div>
+                     <label htmlFor="firstname" className="text-[9px] font-black text-slate-400 uppercase block mb-1">First Name</label>
+                     <input id="firstname" autoComplete="given-name" placeholder="First Name" className="p-4 bg-slate-50 rounded-xl font-bold w-full" required />
+                   </div>
+                   <div>
+                     <label htmlFor="othername" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Other Name</label>
+                     <input id="othername" autoComplete="additional-name" placeholder="Other Name" className="p-4 bg-slate-50 rounded-xl font-bold w-full" />
+                   </div>
+                   <div className="relative">
+                     <label htmlFor="dob" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Date of Birth</label>
+                     <input id="dob" type="date" autoComplete="bday" className="w-full p-4 bg-slate-50 rounded-xl font-bold" required />
+                   </div>
+                   <div>
+                     <label htmlFor="gender" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Gender</label>
+                     <select id="gender" autoComplete="sex" className="p-4 bg-slate-50 rounded-xl font-bold w-full"><option>Male</option><option>Female</option></select>
+                   </div>
+                   <div className="md:col-span-2">
+                     <label htmlFor="email" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Email Address</label>
+                     <input id="email" type="email" autoComplete="email" placeholder="Email Address" className="p-4 bg-slate-50 rounded-xl font-bold w-full" required />
+                   </div>
+                   <div>
+                     <label htmlFor="phone" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Phone Number</label>
+                     <input id="phone" autoComplete="tel" placeholder="Phone Number" className="p-4 bg-slate-50 rounded-xl font-bold w-full" required />
+                   </div>
+                   <div>
+                     <label htmlFor="nin" className="text-[9px] font-black text-slate-400 uppercase block mb-1">NIN</label>
+                     <input id="nin" autoComplete="off" placeholder="NIN (11 Digits)" className="p-4 bg-slate-50 rounded-xl font-bold w-full" required />
+                   </div>
                 </div>
                 
                 {/* 100% PRESERVED RESIDENTIAL FIELDS */}
@@ -387,10 +791,22 @@ const Registration = () => {
                 <div className="space-y-4 pt-4 border-t border-slate-100">
                    <h3 className="text-xs font-black text-cac-blue uppercase tracking-widest border-l-4 border-cac-green pl-3">Secretary Details</h3>
                    <div className="grid md:grid-cols-3 gap-4">
-                      <input id="sec-surname" placeholder="Surname" className="p-4 bg-slate-50 rounded-xl font-bold" />
-                      <input id="sec-firstname" placeholder="First Name" className="p-4 bg-slate-50 rounded-xl font-bold" />
-                      <input id="sec-phone" placeholder="Phone" className="p-4 bg-slate-50 rounded-xl font-bold" />
-                      <input id="sec-nin" placeholder="NIN" className="p-4 bg-slate-50 rounded-xl font-bold" />
+                      <div>
+                        <label htmlFor="sec-surname" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Surname</label>
+                        <input id="sec-surname" autocomplete="family-name" placeholder="Surname" className="p-4 bg-slate-50 rounded-xl font-bold w-full" />
+                      </div>
+                      <div>
+                        <label htmlFor="sec-firstname" className="text-[9px] font-black text-slate-400 uppercase block mb-1">First Name</label>
+                        <input id="sec-firstname" autocomplete="given-name" placeholder="First Name" className="p-4 bg-slate-50 rounded-xl font-bold w-full" />
+                      </div>
+                      <div>
+                        <label htmlFor="sec-phone" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Phone</label>
+                        <input id="sec-phone" autocomplete="tel" placeholder="Phone" className="p-4 bg-slate-50 rounded-xl font-bold w-full" />
+                      </div>
+                      <div>
+                        <label htmlFor="sec-nin" className="text-[9px] font-black text-slate-400 uppercase block mb-1">NIN</label>
+                        <input id="sec-nin" autocomplete="off" placeholder="NIN" className="p-4 bg-slate-50 rounded-xl font-bold w-full" />
+                      </div>
                    </div>
                 </div>
               )}
@@ -421,8 +837,24 @@ const Registration = () => {
                  </div>
               </div>
 
-              <button type="submit" className="w-full bg-cac-green text-white py-6 rounded-2xl font-black text-xl shadow-2xl hover:bg-cac-blue hover:translate-y-[-2px] active:translate-y-[0px] transition-all flex items-center justify-center gap-4 uppercase">
-                 PROCEED TO SECURE PAYMENT <ArrowRight />
+              <button 
+                type="submit" 
+                disabled={uploadStatus === 'uploading'}
+                className={`w-full py-6 rounded-2xl font-black text-xl shadow-2xl flex items-center justify-center gap-4 uppercase transition-all ${
+                  uploadStatus === 'uploading' 
+                    ? 'bg-slate-400 text-white cursor-not-allowed opacity-60' 
+                    : 'bg-cac-green text-white hover:bg-cac-blue hover:translate-y-[-2px] active:translate-y-[0px]'
+                }`}
+              >
+                {uploadStatus === 'uploading' ? (
+                  <>
+                    <Loader className="animate-spin" size={20} /> PROCESSING...
+                  </>
+                ) : (
+                  <>
+                    PROCEED TO SECURE PAYMENT <ArrowRight />
+                  </>
+                )}
               </button>
             </form>
           </div>

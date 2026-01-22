@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Edit3, Trash2, Camera, DollarSign, Newspaper, Layout, 
-  Check, Loader, Image as ImageIcon, X, FileText, Eye, Menu 
+import {
+  Edit3, Trash2, Camera, DollarSign, Newspaper, Layout,
+  Check, Loader, Image as ImageIcon, X, FileText, Eye, Menu
 } from 'lucide-react';
+import JSZip from 'jszip';
 import { supabase } from '../SupabaseClient';
 
 // — HELPER: FAST IMAGE COMPRESSOR —
@@ -35,58 +36,392 @@ const compressImage = (file, maxWidth = 1600) => {
   });
 };
 
-//  1. CLIENT ORDERS MANAGER
-const OrdersManager = ({ registrations }) => {
-  const [selectedOrder, setSelectedOrder] = useState(null);
+// 1. CLIENT REGISTRATION MANAGER - SPECIALIZED FOR VERIFICATION DOCUMENTS
+const OrdersManager = ({ registrations, fetchData }) => {
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [zipping, setZipping] = useState(false);
+  const [filterStatus, setFilterStatus] = useState('all'); // all, verified, pending, paid, unpaid
+  const [paymentFilter, setPaymentFilter] = useState('all'); // all, paid, pending
+
+  // Check document completeness
+  const getDocumentStatus = (order) => {
+    const docs = order.full_details?.uploaded_docs || {};
+    const required = ['ID Card', 'Signature', 'Passport'];
+    const uploaded = Object.keys(docs);
+    const complete = required.every(doc => uploaded.includes(doc));
+    return { complete, uploaded: uploaded.length, required: required.length };
+  };
+
+  // Filter registrations by document status AND payment status
+  const filteredRegistrations = registrations.filter(reg => {
+    // Document filter
+    let docMatch = true;
+    if (filterStatus === 'verified') docMatch = getDocumentStatus(reg).complete;
+    if (filterStatus === 'pending') docMatch = !getDocumentStatus(reg).complete;
+    
+    // Payment filter
+    let paymentMatch = true;
+    if (paymentFilter === 'paid') paymentMatch = reg.payment_status === 'paid';
+    if (paymentFilter === 'pending') paymentMatch = reg.payment_status !== 'paid';
+    
+    return docMatch && paymentMatch;
+  });
+
+  const downloadAllAsZip = async (order) => {
+    setZipping(true);
+    const zip = new JSZip();
+    const folder = zip.folder(`${order.surname}_${order.firstname}_Verification`);
+
+    const docs = order.full_details?.uploaded_docs || {};
+    const downloadPromises = [];
+
+    Object.entries(docs).forEach(([docType, urls]) => {
+      urls.forEach((url, index) => {
+        const promise = fetch(url)
+          .then(res => res.blob())
+          .then(blob => {
+            const extension = url.split('.').pop().split(/\#|\?/)[0] || 'jpg';
+            folder.file(`${docType}_${index + 1}.${extension}`, blob);
+          });
+        downloadPromises.push(promise);
+      });
+    });
+
+    try {
+      await Promise.all(downloadPromises);
+      const content = await zip.generateAsync({ type: "blob" });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = `${order.surname}_${order.firstname}_VerificationDocs.zip`;
+      link.click();
+    } catch (err) {
+      alert("Error creating ZIP: " + err.message);
+    } finally {
+      setZipping(false);
+    }
+  };
+
+  const downloadAllFormsAsZip = async () => {
+    setZipping(true);
+    const zip = new JSZip();
+
+    try {
+      for (const reg of filteredRegistrations) {
+        const formData = reg.full_details || {};
+        const clientFolder = zip.folder(`${reg.surname}_${reg.firstname}_${reg.service_type.replace(/\s+/g, '_')}`);
+
+        // Create text file with form data
+        let content = `REGISTRATION FORM - ${reg.service_type}\n`;
+        content += `=====================================\n\n`;
+        content += `PAYMENT REFERENCE: ${reg.paystack_ref}\n`;
+        content += `PAYMENT STATUS: ${reg.payment_status}\n`;
+        content += `AMOUNT: ₦${parseInt(reg.amount).toLocaleString()}\n`;
+        content += `DATE: ${new Date(reg.created_at).toLocaleDateString()}\n\n`;
+
+        content += `PERSONAL INFORMATION:\n`;
+        content += `---------------------\n`;
+        content += `Surname: ${reg.surname}\n`;
+        content += `First Name: ${reg.firstname}\n`;
+        content += `Email: ${reg.email || 'N/A'}\n`;
+        content += `Phone: ${reg.phone || 'N/A'}\n\n`;
+
+        content += `BUSINESS DETAILS:\n`;
+        content += `-----------------\n`;
+        content += `Service Type: ${reg.service_type}\n`;
+        content += `Business Category: ${formData.business_category || 'N/A'}\n`;
+        content += `Business Nature: ${formData.business_nature || 'N/A'}\n\n`;
+
+        content += `ADDITIONAL FORM DATA:\n`;
+        content += `---------------------\n`;
+        Object.entries(formData).forEach(([key, value]) => {
+          if (key !== 'uploaded_docs' && key !== 'business_category' && key !== 'business_nature') {
+            const displayKey = key.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            content += `${displayKey}: ${value || 'N/A'}\n`;
+          }
+        });
+
+        clientFolder.file(`Registration_Form.txt`, content);
+
+        // Add uploaded documents
+        const docs = formData.uploaded_docs || {};
+        const downloadPromises = [];
+
+        Object.entries(docs).forEach(([docType, urls]) => {
+          if (Array.isArray(urls)) {
+            urls.forEach((url, index) => {
+              if (url && typeof url === 'string') {
+                const promise = fetch(url)
+                  .then(res => res.blob())
+                  .then(blob => {
+                    const extension = url.split('.').pop().split(/\#|\?/)[0] || 'jpg';
+                    clientFolder.file(`${docType}_${index + 1}.${extension}`, blob);
+                  })
+                  .catch(err => console.error(`Failed to download ${docType}_${index + 1}:`, err));
+                downloadPromises.push(promise);
+              }
+            });
+          }
+        });
+
+        await Promise.all(downloadPromises);
+      }
+
+      const content = await zip.generateAsync({ type: "blob" });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = `All_Registered_Forms_${new Date().toISOString().split('T')[0]}.zip`;
+      link.click();
+    } catch (err) {
+      alert("Error creating forms ZIP: " + err.message);
+    } finally {
+      setZipping(false);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-xl md:rounded-2xl shadow-sm border overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead className="bg-slate-50 text-[10px] md:text-xs uppercase font-black text-slate-400">
-            <tr>
-              <th className="p-2 md:p-4">Date</th>
-              <th className="p-2 md:p-4">Client</th>
-              <th className="p-4 hidden md:table-cell">Service</th>
-              <th className="p-2 md:p-4">Amount</th>
-              <th className="p-2 md:p-4">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {registrations.map((order) => (
-              <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                <td className="p-2 md:p-4 text-xs md:text-sm text-slate-500">{new Date(order.created_at).toLocaleDateString()}</td>
-                <td className="p-2 md:p-4 font-bold text-xs md:text-base text-slate-800">{order.surname}</td>
-                <td className="p-4 hidden md:table-cell"><span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold uppercase">{order.service_type}</span></td>
-                <td className="p-2 md:p-4 font-black text-xs md:text-base text-green-600">₦{parseInt(order.amount).toLocaleString()}</td>
-                <td className="p-2 md:p-4">
-                  <button onClick={() => setSelectedOrder(order)} className="bg-slate-900 text-white px-2 md:px-3 py-1 rounded text-[10px] md:text-xs font-bold hover:bg-green-600 flex items-center gap-1">
-                    <Eye size={12} /> <span className="hidden md:inline">View</span>
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="space-y-6">
+      {/* Filter Tabs - Documents */}
+      <div>
+        <p className="text-[10px] font-black text-slate-500 mb-2 uppercase">Filter by Documents</p>
+        <div className="flex gap-2 bg-white p-4 rounded-xl border shadow-sm mb-4">
+          <button onClick={() => setFilterStatus('all')} className={`px-4 py-2 rounded-lg font-bold text-xs transition-all ${filterStatus === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+            All Clients ({registrations.length})
+          </button>
+          <button onClick={() => setFilterStatus('verified')} className={`px-4 py-2 rounded-lg font-bold text-xs transition-all ${filterStatus === 'verified' ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+            ✓ Verified ({registrations.filter(r => getDocumentStatus(r).complete).length})
+          </button>
+          <button onClick={() => setFilterStatus('pending')} className={`px-4 py-2 rounded-lg font-bold text-xs transition-all ${filterStatus === 'pending' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+            📄 Incomplete Docs ({registrations.filter(r => !getDocumentStatus(r).complete).length})
+          </button>
+        </div>
       </div>
-      {selectedOrder && (
+
+      {/* Filter Tabs - Payment Status */}
+      <div>
+        <p className="text-[10px] font-black text-slate-500 mb-2 uppercase">Filter by Payment Status</p>
+        <div className="flex gap-2 bg-white p-4 rounded-xl border shadow-sm mb-4">
+          <button onClick={() => setPaymentFilter('all')} className={`px-4 py-2 rounded-lg font-bold text-xs transition-all ${paymentFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+            All ({registrations.length})
+          </button>
+          <button onClick={() => setPaymentFilter('paid')} className={`px-4 py-2 rounded-lg font-bold text-xs transition-all ${paymentFilter === 'paid' ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+            ✅ Paid ({registrations.filter(r => r.payment_status === 'paid').length})
+          </button>
+          <button onClick={() => setPaymentFilter('pending')} className={`px-4 py-2 rounded-lg font-bold text-xs transition-all ${paymentFilter === 'pending' ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+            ⏳ Unpaid ({registrations.filter(r => r.payment_status !== 'paid').length})
+          </button>
+        </div>
+      </div>
+
+      {/* Download All Forms Button */}
+      <div className="bg-white p-4 rounded-xl border shadow-sm mb-4">
+        <button
+          onClick={downloadAllFormsAsZip}
+          disabled={zipping || filteredRegistrations.length === 0}
+          className={`w-full px-6 py-3 rounded-lg font-black text-sm uppercase transition-all flex items-center justify-center gap-2 ${
+            zipping || filteredRegistrations.length === 0
+              ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+              : 'bg-green-600 text-white hover:bg-green-700 hover:scale-105'
+          }`}
+        >
+          {zipping ? (
+            <>
+              <Loader className="animate-spin" size={16} />
+              Creating ZIP...
+            </>
+          ) : (
+            <>
+              📁 Download All Forms as ZIP ({filteredRegistrations.length} forms)
+            </>
+          )}
+        </button>
+        <p className="text-[9px] text-slate-400 text-center mt-2">
+          Downloads all registration forms with business category and nature details
+        </p>
+      </div>
+
+      {/* Clients List */}
+      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left min-w-[800px]">
+            <thead className="bg-slate-50 text-[9px] md:text-[10px] uppercase font-black text-slate-400">
+              <tr>
+                <th className="p-2 md:p-4">Client Name</th>
+                <th className="p-2 md:p-4">Service</th>
+                <th className="p-2 md:p-4">Business Category</th>
+                <th className="p-2 md:p-4">Business Nature</th>
+                <th className="p-2 md:p-4">Amount</th>
+                <th className="p-2 md:p-4">Documents</th>
+                <th className="p-2 md:p-4">Payment</th>
+                <th className="p-2 md:p-4 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredRegistrations.map((reg) => {
+                const docStatus = getDocumentStatus(reg);
+                const isPaid = reg.payment_status === 'paid';
+                const businessCategory = reg.business_category || 'N/A';
+                const businessNature = reg.business_nature || 'N/A';
+                return (
+                  <tr key={reg.id} className="hover:bg-blue-50 transition-colors">
+                    <td className="p-2 md:p-4">
+                      <div>
+                        <p className="font-bold text-slate-800 text-sm">{reg.surname} {reg.firstname}</p>
+                        <p className="text-[9px] md:text-[10px] text-slate-400">{reg.email || 'No email'}</p>
+                      </div>
+                    </td>
+                    <td className="p-2 md:p-4">
+                      <p className="font-bold text-blue-600 text-xs md:text-sm">{reg.service_type}</p>
+                    </td>
+                    <td className="p-2 md:p-4">
+                      <p className="text-xs md:text-sm font-medium text-slate-700 truncate max-w-[120px]" title={businessCategory}>
+                        {businessCategory}
+                      </p>
+                    </td>
+                    <td className="p-2 md:p-4">
+                      <p className="text-xs md:text-sm font-medium text-slate-700 truncate max-w-[150px]" title={businessNature}>
+                        {businessNature}
+                      </p>
+                    </td>
+                    <td className="p-2 md:p-4">
+                      <p className="font-black text-green-600 text-sm md:text-lg">₦{parseInt(reg.amount).toLocaleString()}</p>
+                    </td>
+                    <td className="p-2 md:p-4">
+                      <span className={`text-[10px] md:text-xs font-black px-2 py-1 rounded-full ${docStatus.complete ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                        {docStatus.complete ? '✓ VERIFIED' : 'INCOMPLETE'}
+                      </span>
+                    </td>
+                    <td className="p-2 md:p-4">
+                      <span className={`text-[10px] md:text-xs font-black px-2 py-1 rounded-full ${isPaid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {isPaid ? '✅ PAID' : '⏳ PENDING'}
+                      </span>
+                    </td>
+                    <td className="p-2 md:p-4 text-center">
+                      <div className="flex flex-col md:flex-row gap-1 md:gap-2 justify-center">
+                        <button
+                          onClick={() => setSelectedClient(reg)}
+                          className="px-2 md:px-3 py-1 rounded-lg bg-blue-600 text-white font-bold text-[10px] md:text-xs hover:bg-blue-700 transition-all"
+                        >
+                          VIEW
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (window.confirm(`Delete ${reg.surname} ${reg.firstname}? This cannot be undone.`)) {
+                              try {
+                                const { error } = await supabase.from('registrations').delete().eq('id', reg.id);
+                                if (error) throw error;
+                                alert('✅ Registration deleted successfully');
+                                await fetchData();
+                              } catch (err) {
+                                alert(`❌ Delete failed: ${err.message}`);
+                              }
+                            }
+                          }}
+                          className="px-2 md:px-3 py-1 rounded-lg bg-red-600 text-white font-bold text-[10px] md:text-xs hover:bg-red-700 transition-all"
+                        >
+                          DELETE
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* CLIENT DETAIL MODAL */}
+      {selectedClient && (
         <div className="fixed inset-0 bg-black/80 z-[999] flex items-center justify-center p-3 md:p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-xl md:rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="p-4 md:p-6 bg-slate-900 text-white flex justify-between items-center sticky top-0 z-10">
-              <h3 className="text-sm md:text-lg font-black uppercase">Registration Data</h3>
-              <button onClick={() => setSelectedOrder(null)} className="hover:text-red-400"><X size={20} /></button>
-            </div>
-            <div className="p-4 md:p-8 space-y-4 md:space-y-6">
-              <div className="grid grid-cols-2 gap-3 md:gap-4 bg-slate-50 p-3 md:p-4 rounded-lg md:rounded-xl border">
-                <div><p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase">Service</p><p className="font-black text-sm md:text-lg">{selectedOrder.service_type}</p></div>
-                <div className="text-right"><p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase">Paid</p><p className="font-black text-sm md:text-lg text-green-600">₦{parseInt(selectedOrder.amount).toLocaleString()}</p></div>
+          <div className="bg-white rounded-xl md:rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            {/* Modal Header */}
+            <div className="p-4 md:p-6 bg-gradient-to-r from-slate-900 to-blue-900 text-white flex justify-between items-start sticky top-0 z-10">
+              <div>
+                <h3 className="text-sm md:text-lg font-black uppercase">Client Verification Details</h3>
+                <p className="text-[10px] text-slate-300 font-bold mt-1">Ref: {selectedClient.paystack_ref}</p>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                {Object.entries(selectedOrder.full_details || {}).map(([key, value]) => (
-                  <div key={key} className="p-2.5 md:p-3 border rounded-lg bg-white">
-                    <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase mb-1">{key.replace(/_/g, ' ')}</p>
-                    <p className="text-xs md:text-sm font-bold text-slate-700 break-words">{value || 'N/A'}</p>
+              <button onClick={() => setSelectedClient(null)} className="hover:text-red-400 transition-colors"><X size={24} /></button>
+            </div>
+
+            <div className="p-4 md:p-8 space-y-6">
+              {/* Client Header */}
+              <div className="bg-gradient-to-r from-blue-50 to-slate-50 p-4 rounded-xl border-2 border-blue-200">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Full Name</p>
+                    <p className="font-black text-lg text-slate-800">{selectedClient.surname} {selectedClient.firstname}</p>
                   </div>
-                ))}
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Service</p>
+                    <p className="font-black text-blue-600">{selectedClient.service_type}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Amount Paid</p>
+                    <p className="font-black text-green-600 text-lg">₦{parseInt(selectedClient.amount).toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Registration Data */}
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-2">Registration Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {Object.entries(selectedClient.full_details || {}).map(([key, value]) => {
+                    if (key === 'uploaded_docs') return null;
+                    return (
+                      <div key={key} className="p-3 border rounded-lg bg-slate-50 shadow-sm">
+                        <p className="text-[9px] font-black text-slate-400 uppercase mb-1">{key.replace(/[-_]/g, ' ')}</p>
+                        <p className="text-sm font-bold text-slate-800 break-words">{value || '—'}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Verification Documents Gallery */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Verification Documents</h4>
+                  <span className={`text-xs font-black px-2 py-1 rounded ${getDocumentStatus(selectedClient).complete ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                    {getDocumentStatus(selectedClient).uploaded}/{getDocumentStatus(selectedClient).required}
+                  </span>
+                </div>
+                
+                {selectedClient.full_details?.uploaded_docs && Object.keys(selectedClient.full_details.uploaded_docs).length > 0 ? (
+                  <div className="grid grid-cols-3 gap-3">
+                    {Object.entries(selectedClient.full_details.uploaded_docs).map(([docType, urls]) => {
+                      // Filter out empty arrays and null values
+                      const validUrls = Array.isArray(urls) ? urls.filter(url => url && typeof url === 'string') : [];
+                      
+                      return validUrls.length > 0 ? validUrls.map((url, index) => (
+                        <a 
+                          key={`${docType}-${index}`} 
+                          href={url} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="group block relative aspect-square border-2 border-slate-200 rounded-xl overflow-hidden hover:border-blue-500 transition-all shadow-sm hover:shadow-lg"
+                        >
+                          <img 
+                            src={url} 
+                            alt={docType}
+                            onError={(e) => {
+                              console.error(`Failed to load document image: ${url}`);
+                              e.target.style.display = 'none';
+                            }}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform" 
+                          />
+                          <div className="absolute inset-x-0 bottom-0 bg-black/70 p-2 text-center backdrop-blur-sm">
+                            <p className="text-[8px] text-white font-black uppercase">{docType}</p>
+                          </div>
+                        </a>
+                      )) : null;
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-6 text-center bg-slate-50 rounded-xl border-2 border-dashed border-slate-300">
+                    <p className="text-slate-400 font-bold text-sm">No documents uploaded yet</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -286,20 +621,59 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [uploadingId, setUploadingId] = useState(null);
   const [data, setData] = useState({ registrations: [], services: [], news: [], slides: [], assets: [] });
+  const [connectionStatus, setConnectionStatus] = useState('connecting'); // connecting, connected, error
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     setLoading(true);
-    const [r, s, n, sl, a] = await Promise.all([
-      supabase.from('registrations').select('*').order('created_at', { ascending: false }),
-      supabase.from('services').select('*').order('id'),
-      supabase.from('news').select('*').order('id', { ascending: false }),
-      supabase.from('hero_slides').select('*').order('id'),
-      supabase.from('site_assets').select('*')
-    ]);
-    setData({ registrations: r.data||[], services: s.data||[], news: n.data||[], slides: sl.data||[], assets: a.data||[] });
-    setLoading(false);
+    setConnectionStatus('connecting');
+    setErrorMsg('');
+    
+    try {
+      console.log('📡 Connecting to Supabase...');
+      
+      const [r, s, n, sl, a] = await Promise.all([
+        supabase.from('registrations').select('*').order('created_at', { ascending: false }),
+        supabase.from('services').select('*').order('id'),
+        supabase.from('news').select('*').order('id', { ascending: false }),
+        supabase.from('hero_slides').select('*').order('id'),
+        supabase.from('site_assets').select('*')
+      ]);
+
+      // Check for errors
+      if (r.error) throw new Error(`Registrations: ${r.error.message}`);
+      if (s.error) throw new Error(`Services: ${s.error.message}`);
+      if (n.error) throw new Error(`News: ${n.error.message}`);
+      if (sl.error) throw new Error(`Slides: ${sl.error.message}`);
+      if (a.error) throw new Error(`Assets: ${a.error.message}`);
+
+      console.log(`✅ Supabase Connected!`);
+      console.log(`📋 Registrations: ${r.data?.length || 0} clients`);
+      console.log(`💰 Services: ${s.data?.length || 0} items`);
+      console.log(`📰 News: ${n.data?.length || 0} posts`);
+      console.log(`🖼️ Slides: ${sl.data?.length || 0} banners`);
+      console.log(`📦 Assets: ${a.data?.length || 0} images`);
+
+      setData({ 
+        registrations: r.data || [], 
+        services: s.data || [], 
+        news: n.data || [], 
+        slides: sl.data || [], 
+        assets: a.data || [] 
+      });
+      
+      setConnectionStatus('connected');
+      setErrorMsg('');
+    } catch (error) {
+      console.error('❌ Supabase Connection Error:', error);
+      setConnectionStatus('error');
+      setErrorMsg(error.message || 'Failed to connect to Supabase');
+      alert(`⚠️ Database Error: ${error.message}\n\nPlease check your Supabase connection or contact support.`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleUpload = async (file, contextId) => {
@@ -330,17 +704,12 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
-      <div className="md:hidden bg-blue-600 text-white p-4 flex justify-between items-center sticky top-0 z-50 shadow-lg">
-        <h2 className="font-black text-base uppercase text-white">REX360 Admin</h2>
-        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-white"><Menu size={24} /></button>
-      </div>
-
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-0 bg-black/50 z-40" onClick={() => setMobileMenuOpen(false)}>
-          <div className="bg-blue-600 text-white w-64 h-full p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <nav className="space-y-4 mt-10">
+          <div className="bg-blue-600 text-white w-64 h-full p-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <nav className="space-y-3 mt-8">
               {tabs.map(tab => (
-                <button key={tab.id} onClick={() => {setActiveTab(tab.id); setMobileMenuOpen(false);}} className={`w-full p-3 rounded-xl text-left font-bold flex gap-3 ${activeTab===tab.id?'bg-white text-blue-600':'hover:bg-white/10'}`}>
+                <button key={tab.id} onClick={() => {setActiveTab(tab.id); setMobileMenuOpen(false);}} className={`w-full p-2.5 rounded-lg text-left font-bold flex gap-2 text-sm ${activeTab===tab.id?'bg-white text-blue-600':'hover:bg-white/10'}`}>
                   {tab.icon} {tab.label}
                 </button>
               ))}
@@ -350,23 +719,55 @@ const AdminDashboard = () => {
       )}
 
       <div className="flex">
-        <div className="hidden md:flex w-72 bg-blue-600 text-white p-6 flex-col min-h-screen sticky top-0">
-          <h2 className="font-black text-xl uppercase mb-10 text-center">REX360 Admin</h2>
-          <nav className="space-y-2">
+        <div className="hidden md:flex w-64 bg-blue-600 text-white p-4 flex-col min-h-screen sticky top-0">
+          <nav className="space-y-2 mt-4">
             {tabs.map(tab => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full p-4 rounded-xl text-left font-bold flex gap-3 transition-all ${activeTab===tab.id?'bg-white text-blue-600 shadow-lg':'hover:bg-white/10'}`}>
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full p-3 rounded-lg text-left font-bold flex gap-2 text-sm transition-all ${activeTab===tab.id?'bg-white text-blue-600 shadow-lg':'hover:bg-white/10'}`}>
                 {tab.icon} {tab.label}
               </button>
             ))}
           </nav>
         </div>
 
-        <div className="flex-grow p-4 md:p-8">
-          <header className="flex justify-between items-center mb-8 border-b pb-6">
-            <h1 className="text-xl md:text-3xl font-black uppercase text-blue-600">{activeTab} Manager</h1>
-            {loading && <Loader className="animate-spin text-green-600" size={20} />}
+        <div className="flex-grow p-3 md:p-6">
+          {/* Mobile Header */}
+          <div className="md:hidden flex justify-between items-center mb-4 pb-3 border-b">
+            <button onClick={() => setMobileMenuOpen(true)} className="p-2 bg-blue-600 text-white rounded-lg">
+              <Menu size={20} />
+            </button>
+            <h1 className="text-lg font-black uppercase text-blue-600">{activeTab} Manager</h1>
+            <div className={`text-xs font-black px-2 py-1 rounded-full ${connectionStatus === 'connected' ? 'bg-green-100 text-green-700' : connectionStatus === 'error' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+              {connectionStatus === 'connected' && '🟢'}
+              {connectionStatus === 'error' && '🔴'}
+              {connectionStatus === 'connecting' && '🟡'}
+            </div>
+          </div>
+
+          {/* Connection Status Bar */}
+          {connectionStatus === 'error' && (
+            <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 rounded-lg">
+              <p className="text-sm font-bold text-red-700">❌ Database Connection Error</p>
+              <p className="text-xs text-red-600 mt-1">{errorMsg}</p>
+              <button onClick={fetchData} className="mt-2 text-xs font-bold text-red-600 hover:text-red-800 underline">🔄 Retry Connection</button>
+            </div>
+          )}
+
+          <header className="hidden md:flex justify-between items-center mb-6 border-b pb-4">
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-black uppercase text-blue-600">{activeTab} Manager</h1>
+              <div className={`text-xs font-black px-2 py-1 rounded-full ${connectionStatus === 'connected' ? 'bg-green-100 text-green-700' : connectionStatus === 'error' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                {connectionStatus === 'connected' && '🟢 Connected'}
+                {connectionStatus === 'error' && '🔴 Error'}
+                {connectionStatus === 'connecting' && '🟡 Connecting...'}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {loading && <Loader className="animate-spin text-green-600" size={18} />}
+              <button onClick={fetchData} className="text-xs font-bold text-blue-600 hover:text-blue-800 px-2 py-1 bg-blue-50 rounded hover:bg-blue-100 transition-all">🔄 Refresh</button>
+            </div>
           </header>
-          {activeTab === 'orders' && <OrdersManager registrations={data.registrations} />}
+
+          {activeTab === 'orders' && <OrdersManager registrations={data.registrations} fetchData={fetchData} />}
           {activeTab === 'services' && <ServicesManager services={data.services} fetchData={fetchData} />}
           {activeTab === 'news' && <NewsManager news={data.news} fetchData={fetchData} />}
           {activeTab === 'slides' && <SlidesManager slides={data.slides} fetchData={fetchData} handleUpload={handleUpload} uploadingId={uploadingId} />}

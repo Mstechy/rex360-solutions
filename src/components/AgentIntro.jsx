@@ -34,7 +34,7 @@ const AgentIntro = () => {
             CAC Accredited Agent
           </div>
           <h2 className="text-5xl md:text-6xl font-black text-cac-blue leading-[1.1] tracking-tighter">
-            Doris Yuenva <br />
+            Smart Doris Yuenva <br />
             <span className="text-cac-green">Benson</span>
           </h2>
           <p className="text-xl text-slate-600 leading-relaxed font-medium">
@@ -52,26 +52,31 @@ const AgentIntro = () => {
         </div>
 
         {/* Right Side: Dynamic Image ONLY */}
-        <div className="relative flex justify-center items-center">
-          <div className="relative w-80 h-80 md:w-[28rem] md:h-[28rem] rounded-full flex items-center justify-center p-4 blinking-border shadow-[0_20px_50px_rgba(0,0,0,0.1)]">
-            
-            <div className="w-full h-full rounded-full bg-white overflow-hidden border-8 border-white shadow-inner flex items-center justify-center">
+        <div className="relative flex flex-col items-center">
+          <div className="relative w-64 h-64 md:w-80 md:h-80 rounded-full flex items-center justify-center p-3 blinking-border shadow-[0_20px_50px_rgba(0,0,0,0.1)]">
+
+            <div className="w-full h-full rounded-full bg-white overflow-hidden border-6 border-white shadow-inner flex items-center justify-center">
               {/* Only show the image if it exists in your database */}
               {agentImage && (
-                <img 
-                  src={agentImage} 
-                  alt="Doris Yuenva Benson" 
+                <img
+                  src={agentImage}
+                  alt="Doris Yuenva Benson"
                   className="w-full h-full object-cover transform transition-transform duration-1000 hover:scale-110 grayscale-0 hover:grayscale-0"
                 />
               )}
             </div>
 
-            <div className="absolute -bottom-4 -right-2 md:right-8 bg-cac-blue text-white px-8 py-3 rounded-full shadow-2xl font-black text-sm animate-bounce tracking-[0.3em] border-2 border-white uppercase">
+            <div className="absolute -bottom-3 -right-1 md:-bottom-4 md:right-6 bg-cac-blue text-white px-6 py-2 md:px-8 md:py-3 rounded-full shadow-2xl font-black text-xs md:text-sm animate-bounce tracking-[0.2em] md:tracking-[0.3em] border-2 border-white uppercase">
               VERIFIED
             </div>
           </div>
+          {/* Label below the circle */}
+          <div className="mt-6 text-center">
+            <p className="text-lg md:text-xl font-bold text-cac-blue">
+              Doris Yuenva Benson Accredited Agent
+            </p>
+          </div>
         </div>
-
       </div>
     </section>
   );

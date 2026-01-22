@@ -7,12 +7,33 @@
   html {
     scroll-behavior: smooth;
   }
-  
+
   /* Better font rendering */
   body {
     @apply antialiased;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-display: swap;
+  }
+
+  /* Performance optimizations */
+  * {
+    box-sizing: border-box;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    loading: lazy;
+  }
+
+  /* Reduce paint on scroll */
+  * {
+    will-change: auto;
+  }
+
+  .animate-on-scroll {
+    will-change: transform, opacity;
   }
 }
 

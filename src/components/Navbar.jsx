@@ -19,17 +19,17 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-24">
           
-          {/* LOGO SECTION - Your Custom Crop Logic */}
+          {/* LOGO SECTION - Medium Size */}
           <div className="flex-shrink-0 flex items-center">
             <Link to="/" onClick={() => setIsOpen(false)} className="flex items-center">
-              <div className="w-40 md:w-56 h-16 md:h-20 overflow-hidden flex items-center justify-center bg-transparent">
-                <img 
-                  src="/logo.png" 
-                  alt="Rex360 Logo" 
-                  className="w-full h-full object-contain scale-125 filter contrast-150 brightness-110 mix-blend-multiply transition-transform duration-300 hover:scale-150" 
-                  onError={(e) => { 
+              <div className="w-24 md:w-32 h-12 md:h-16 overflow-hidden flex items-center justify-center bg-transparent">
+                <img
+                  src="/logo.png"
+                  alt="Rex360 Logo"
+                  className="w-full h-full object-contain scale-100 filter contrast-150 brightness-110 mix-blend-multiply transition-transform duration-300 hover:scale-110"
+                  onError={(e) => {
                     e.target.src = "https://via.placeholder.com/200x80?text=REX360";
-                  }} 
+                  }}
                 />
               </div>
             </Link>
