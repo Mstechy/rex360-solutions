@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; 
+import { useParams, useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
 import { usePaystackPayment } from 'react-paystack';
 import { Upload, CheckCircle, MessageCircle, ArrowRight, Loader, X, ArrowLeft, Briefcase, ShieldCheck } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { supabase, testSupabaseConnection } from '../SupabaseClient'; 
+import { supabase, testSupabaseConnection } from '../SupabaseClient';
 
 // --- 1. HUGE LIST OF BUSINESS CATEGORIES (100% PRESERVED) ---
 const BUSINESS_CATEGORIES = {
@@ -26,8 +27,9 @@ const BUSINESS_CATEGORIES = {
 
 const Registration = () => {
   const { selectedService } = useParams();
-  const navigate = useNavigate(); 
-  
+  const navigate = useNavigate();
+  const { register, handleSubmit, getValues } = useForm();
+
   const [serviceType, setServiceType] = useState(selectedService || 'Business Name');
   const [step, setStep] = useState('form');
   const [prices, setPrices] = useState({});
