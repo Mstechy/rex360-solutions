@@ -278,25 +278,13 @@ const Registration = () => {
     }
   };
 
-  // Paystack Config - moved inside component to avoid build issues
-  const [paystackConfig, setPaystackConfig] = useState({
+  // Paystack Config - simplified to avoid build issues
+  const paystackConfig = {
     reference: (new Date()).getTime().toString(),
     email: "customer@example.com",
-    amount: 0,
+    amount: currentPrice * 100,
     publicKey: 'pk_test_1dc8f242ed09075faee33e86dff64ce401918129',
-  });
-
-  // Update config when price changes
-  useEffect(() => {
-    const emailElement = document.getElementById('email');
-    const email = emailElement?.value || "customer@example.com";
-    setPaystackConfig({
-      reference: (new Date()).getTime().toString(),
-      email: email,
-      amount: currentPrice * 100,
-      publicKey: 'pk_test_1dc8f242ed09075faee33e86dff64ce401918129',
-    });
-  }, [currentPrice]);
+  };
 
   const initializePayment = usePaystackPayment(paystackConfig);
 
