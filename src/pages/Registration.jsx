@@ -26,9 +26,13 @@ const BUSINESS_CATEGORIES = {
 };
 
 const Registration = () => {
+  console.log('🚀 Registration component starting...');
+
   const { selectedService } = useParams();
   const navigate = useNavigate();
   const { register, handleSubmit, getValues } = useForm();
+
+  console.log('📋 selectedService:', selectedService);
 
   const [serviceType, setServiceType] = useState(selectedService || 'Business Name');
   const [step, setStep] = useState('form');
@@ -75,9 +79,13 @@ const Registration = () => {
     const fetchPrices = async () => {
       try {
         console.log('🔄 Fetching service prices...');
+        console.log('🔗 Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+        console.log('🔑 Supabase Key exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+
         const { data, error } = await supabase.from('services').select('name, price');
         if (error) {
           console.error("❌ Error loading service fees:", error);
+          console.error("Error details:", error.message, error.code, error.details);
           // Set loading to false even on error to prevent infinite loading
           setLoading(false);
         } else if (data) {
@@ -96,6 +104,7 @@ const Registration = () => {
         }
       } catch (err) {
         console.error('💥 Unexpected error fetching prices:', err);
+        console.error('Error stack:', err.stack);
         setLoading(false);
       }
     };
@@ -556,6 +565,56 @@ const Registration = () => {
                   <label htmlFor="ann-notes" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Additional Notes</label>
                   <textarea id="ann-notes" autoComplete="off" placeholder="Any changes in Directors or Address?" className="p-4 rounded-xl border-none font-bold h-24 w-full" />
                 </div>
+             </div>
+          </div>
+        );
+      case 'Copyright':
+        return (
+          <div className="space-y-6 p-6 bg-slate-50 rounded-3xl border border-slate-200">
+             <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest">Copyright Registration</h3>
+             <div className="grid gap-4">
+                <div>
+                  <label htmlFor="copy-title" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Work Title</label>
+                  <input id="copy-title" autoComplete="off" placeholder="Title of the Work" className="p-4 rounded-xl border-none font-bold w-full" required />
+                </div>
+                <div>
+                  <label htmlFor="copy-type" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Type of Work</label>
+                  <select id="copy-type" autoComplete="off" className="p-4 rounded-xl border-none font-bold w-full">
+                     <option value="">Select Work Type</option>
+                     <option value="Literary">Literary Work</option>
+                     <option value="Artistic">Artistic Work</option>
+                     <option value="Musical">Musical Work</option>
+                     <option value="Audiovisual">Audiovisual Work</option>
+                     <option value="Sound Recording">Sound Recording</option>
+                     <option value="Broadcast">Broadcast</option>
+                     <option value="Computer Program">Computer Program</option>
+                     <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="copy-author-name" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Author's Full Name</label>
+                  <input id="copy-author-name" autoComplete="name" placeholder="Author's Full Name" className="p-4 rounded-xl border-none font-bold w-full" required />
+                </div>
+                <div>
+                  <label htmlFor="copy-author-address" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Author's Address</label>
+                  <textarea id="copy-author-address" autoComplete="address" placeholder="Author's Complete Address" className="p-4 rounded-xl border-none font-bold h-20 w-full" required />
+                </div>
+                <div>
+                  <label htmlFor="copy-ownership-proof" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Proof of Ownership (if not the creator)</label>
+                  <input id="copy-ownership-proof" autoComplete="off" placeholder="Assignment/Transfer Document Details" className="p-4 rounded-xl border-none font-bold w-full" />
+                </div>
+                <div>
+                  <label htmlFor="copy-year" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Year of Creation/Publication</label>
+                  <input id="copy-year" type="number" autoComplete="off" placeholder="Year (e.g. 2024)" className="p-4 rounded-xl border-none font-bold w-full" required />
+                </div>
+             </div>
+             <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                <p className="text-[10px] font-black text-blue-700 uppercase mb-2">Required Documents:</p>
+                <ul className="text-[9px] text-blue-600 space-y-1">
+                   <li>• Two copies of the work (digital or physical)</li>
+                   <li>• Author's details (name, address)</li>
+                   <li>• Proof of ownership (if you're not the creator)</li>
+                </ul>
              </div>
           </div>
         );

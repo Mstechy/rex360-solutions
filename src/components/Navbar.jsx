@@ -9,9 +9,7 @@ const Navbar = () => {
     { name: 'SERVICES', path: '/#services-section', isHash: true },
     { name: 'NEWS', path: '/news' },
     { name: 'ABOUT', path: '/#about-doris', isHash: true },
-    // If you don't have a contact page yet, this will just go to top. 
-    // You can point this to your WhatsApp link if you prefer.
-    { name: 'CONTACT', path: 'https://wa.me/2349048349548', isExternal: true }, 
+    { name: 'CONTACT', path: '/#contact-footer', isHash: true },
   ];
 
   return (

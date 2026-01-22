@@ -23,8 +23,8 @@ const ServicesSection = () => {
       const { data, error } = await supabase
         .from('services')
         .select('*')
-        .order('id', { ascending: true });
-      
+        .order('display_order', { ascending: true });
+
       if (data) setServices(data);
       setLoading(false);
     };

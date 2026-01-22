@@ -636,7 +636,7 @@ const AdminDashboard = () => {
       
       const [r, s, n, sl, a] = await Promise.all([
         supabase.from('registrations').select('*').order('created_at', { ascending: false }),
-        supabase.from('services').select('*').order('id'),
+        supabase.from('services').select('*').order('display_order'),
         supabase.from('news').select('*').order('id', { ascending: false }),
         supabase.from('hero_slides').select('*').order('id'),
         supabase.from('site_assets').select('*')

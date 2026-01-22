@@ -4,8 +4,8 @@ import { Mail, Phone, MapPin, CreditCard, User, Landmark, Instagram } from 'luci
 
 const Footer = () => {
   return (
-    <footer className="bg-cac-blue text-white pt-16 pb-8 px-8">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 border-b border-blue-800 pb-12">
+    <footer id="contact-footer" className="bg-cac-blue text-white pt-16 pb-8 px-8">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 border-b border-blue-800 pb-12">
 
         {/* Column 1: Company Info */}
         <div className="space-y-4">
@@ -16,7 +16,7 @@ const Footer = () => {
           </p>
         </div>
 
-        {/* Column 2: Quick Links & Social Media */}
+        {/* Column 2: Quick Links */}
         <div className="space-y-4">
           <h3 className="text-xl font-bold border-l-4 border-cac-green pl-3">Quick Links</h3>
           <ul className="space-y-3 text-blue-100 text-sm">
@@ -31,6 +31,25 @@ const Footer = () => {
               </a>
             </li>
           </ul>
+        </div>
+
+        {/* Column 3: Contact Info & Social Media */}
+        <div className="space-y-4">
+          <h3 className="text-xl font-bold border-l-4 border-cac-green pl-3">Contact Us</h3>
+          <div className="space-y-3 text-blue-100 text-sm">
+            <div className="flex items-center gap-3">
+              <Phone size={16} className="text-cac-green flex-shrink-0" />
+              <a href="tel:09048349548" className="hover:text-cac-green transition-colors">
+                09048349548
+              </a>
+            </div>
+            <div className="flex items-center gap-3">
+              <Mail size={16} className="text-cac-green flex-shrink-0" />
+              <a href="mailto:info@rex360solutions.com" className="hover:text-cac-green transition-colors">
+                info@rex360solutions.com
+              </a>
+            </div>
+          </div>
 
           {/* Social Media Links */}
           <div className="pt-4 border-t border-blue-700">
