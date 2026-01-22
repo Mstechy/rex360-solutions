@@ -71,21 +71,33 @@ const Registration = () => {
 
   useEffect(() => {
     const fetchPrices = async () => {
-      const { data, error } = await supabase.from('services').select('name, price');
-      if (error) {
-        console.error("Error loading service fees");
-      } else if (data) {
-        const priceMap = {};
-        data.forEach(item => {
-          let name = item.name;
-          if (name === 'Company Registration') name = 'Company Name';
-          priceMap[name] = item.price;
-        });
-        setPrices(priceMap);
+      try {
+        console.log('🔄 Fetching service prices...');
+        const { data, error } = await supabase.from('services').select('name, price');
+        if (error) {
+          console.error("❌ Error loading service fees:", error);
+          // Set loading to false even on error to prevent infinite loading
+          setLoading(false);
+        } else if (data) {
+          console.log('✅ Service prices loaded:', data);
+          const priceMap = {};
+          data.forEach(item => {
+            let name = item.name;
+            if (name === 'Company Registration') name = 'Company Name';
+            priceMap[name] = item.price;
+          });
+          setPrices(priceMap);
+          setLoading(false);
+        } else {
+          console.warn('⚠️ No service data received');
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('💥 Unexpected error fetching prices:', err);
         setLoading(false);
       }
     };
-    
+
     fetchPrices();
   }, []);
 
