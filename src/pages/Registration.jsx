@@ -82,13 +82,22 @@ const Registration = () => {
         console.log('🔗 Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
         console.log('🔑 Supabase Key exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
 
-        const { data, error } = await supabase.from('services').select('name, price');
+        const { data, error } = await supabase.from('services').select('name, price').order('display_order', { ascending: true });
         if (error) {
           console.error("❌ Error loading service fees:", error);
           console.error("Error details:", error.message, error.code, error.details);
-          // Set loading to false even on error to prevent infinite loading
+          // Set fallback prices to prevent blank page
+          setPrices({
+            'Business Name': 3000,
+            'Company Name': 5000,
+            'NGO Registration': 15000,
+            'Export Licence': 25000,
+            'Trademark': 20000,
+            'Copyright': 25000,
+            'Annual Returns': 5000
+          });
           setLoading(false);
-        } else if (data) {
+        } else if (data && data.length > 0) {
           console.log('✅ Service prices loaded:', data);
           const priceMap = {};
           data.forEach(item => {
@@ -99,12 +108,32 @@ const Registration = () => {
           setPrices(priceMap);
           setLoading(false);
         } else {
-          console.warn('⚠️ No service data received');
+          console.warn('⚠️ No service data received, using fallback prices');
+          // Fallback prices to prevent blank page
+          setPrices({
+            'Business Name': 3000,
+            'Company Name': 5000,
+            'NGO Registration': 15000,
+            'Export Licence': 25000,
+            'Trademark': 20000,
+            'Copyright': 25000,
+            'Annual Returns': 5000
+          });
           setLoading(false);
         }
       } catch (err) {
         console.error('💥 Unexpected error fetching prices:', err);
         console.error('Error stack:', err.stack);
+        // Fallback prices to prevent blank page
+        setPrices({
+          'Business Name': 3000,
+          'Company Name': 5000,
+          'NGO Registration': 15000,
+          'Export Licence': 25000,
+          'Trademark': 20000,
+          'Copyright': 25000,
+          'Annual Returns': 5000
+        });
         setLoading(false);
       }
     };
