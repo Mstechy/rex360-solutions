@@ -694,7 +694,7 @@ const Registration = () => {
 
           <div className="bg-white p-8 md:p-10 rounded-2xl shadow-2xl border border-slate-200 mb-8">
             <div className="bg-slate-50 p-6 rounded-xl border-l-4 border-slate-500 mb-8">
-              <p className="text-lg font-black text-slate-800 mb-2">✅ Payment Confirmed</p>
+              <p className="text-lg font-black text-slate-800 mb-2">Payment Confirmed</p>
               <p className="text-sm text-slate-700">Your payment and registration have been successfully processed.</p>
             </div>
 
