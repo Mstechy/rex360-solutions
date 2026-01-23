@@ -25,6 +25,7 @@ const Navbar = () => {
                   src="/logo.png"
                   alt="Rex360 Logo"
                   className="w-full h-full object-contain scale-100 filter contrast-150 brightness-110 mix-blend-multiply transition-transform duration-300 hover:scale-110"
+                  loading="lazy"
                   onError={(e) => {
                     e.target.src = "https://via.placeholder.com/200x80?text=REX360";
                   }}

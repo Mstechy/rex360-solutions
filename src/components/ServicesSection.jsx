@@ -94,7 +94,10 @@ const ServicesSection = () => {
 
                 {/* We use the fixed 'linkName' here */}
                 <Link to={`/register/${linkName}`} className="block">
-                <button className="flex items-center justify-between w-full bg-slate-900 text-white px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl font-black group-hover:bg-cac-green transition-all duration-300 shadow-lg active:scale-95 text-xs md:text-sm">
+                <button
+                  className="flex items-center justify-between w-full bg-slate-900 text-white px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl font-black group-hover:bg-cac-green transition-all duration-300 shadow-lg active:scale-95 text-xs md:text-sm"
+                  aria-label={`Register for ${service.name} service`}
+                >
                     <span className="uppercase tracking-widest">Register Now</span>
                     <ArrowRight className="group-hover:translate-x-2 transition-transform" size={16} />
                 </button>

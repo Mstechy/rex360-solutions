@@ -27,6 +27,11 @@
     loading: lazy;
   }
 
+  /* Optimize image loading */
+  img[loading="lazy"] {
+    content-visibility: auto;
+  }
+
   /* Reduce paint on scroll */
   * {
     will-change: auto;

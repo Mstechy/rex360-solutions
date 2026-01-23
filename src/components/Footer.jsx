@@ -9,7 +9,7 @@ const Footer = () => {
 
         {/* Column 1: Company Info */}
         <div className="space-y-4">
-          <img src="/logo.png" alt="Rex360 Logo" className="h-12 w-auto brightness-200" />
+          <img src="/logo.png" alt="Rex360 Logo" className="h-12 w-auto brightness-200" loading="lazy" />
           <p className="text-blue-100 text-sm leading-relaxed">
             Rex360 Solutions is a premier digital consultancy and accredited CAC agent
             dedicated to empowering Nigerian businesses.
