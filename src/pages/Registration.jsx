@@ -664,7 +664,7 @@ const Registration = () => {
   if (step === 'success') {
     return (
       <div className="pt-20 pb-20 px-8 text-center bg-white min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
-        {/* Golden Celebration Sprinkles */}
+        {/* Celebration Sprinkles */}
         <div className="absolute inset-0 pointer-events-none">
           {[...Array(50)].map((_, i) => (
             <div
@@ -677,7 +677,7 @@ const Registration = () => {
                 animationDuration: `${2 + Math.random() * 2}s`
               }}
             >
-              <div className="w-2 h-2 bg-yellow-400 rounded-full opacity-60"></div>
+              <div className="w-2 h-2 bg-slate-400 rounded-full opacity-60"></div>
             </div>
           ))}
         </div>
@@ -687,34 +687,34 @@ const Registration = () => {
             <CheckCircle size={120} className="text-green-600 mx-auto drop-shadow-lg" />
           </div>
 
-          <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-3 uppercase bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-3 uppercase">
             🎉 CONGRATULATIONS! 🎉
           </h1>
           <p className="text-xl text-slate-600 mb-8 font-semibold">Your registration has been successfully completed!</p>
 
-          <div className="bg-white p-8 md:p-10 rounded-2xl shadow-2xl border border-yellow-200 mb-8">
-            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-6 rounded-xl border-l-4 border-yellow-500 mb-8">
-              <p className="text-lg font-black text-yellow-800 mb-2">✅ Payment Confirmed</p>
-              <p className="text-sm text-yellow-700">Your payment and registration have been successfully processed.</p>
+          <div className="bg-white p-8 md:p-10 rounded-2xl shadow-2xl border border-slate-200 mb-8">
+            <div className="bg-slate-50 p-6 rounded-xl border-l-4 border-slate-500 mb-8">
+              <p className="text-lg font-black text-slate-800 mb-2">✅ Payment Confirmed</p>
+              <p className="text-sm text-slate-700">Your payment and registration have been successfully processed.</p>
             </div>
 
             <p className="text-base text-slate-700 mb-8 leading-relaxed">
               Thank you for choosing Rex360 Solutions! Your documents and information have been securely recorded in our system.
             </p>
 
-            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-6 rounded-xl border border-yellow-200 mb-8">
+            <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-8">
               <p className="text-sm font-bold text-slate-700 mb-4">What happens next:</p>
               <ul className="text-sm text-slate-700 space-y-3 text-left">
-                <li className="flex items-start gap-3"><span className="text-yellow-600 font-bold mt-0.5">⭐</span> Check your email for a confirmation message</li>
-                <li className="flex items-start gap-3"><span className="text-yellow-600 font-bold mt-0.5">⭐</span> Your application will be reviewed within 48 hours</li>
-                <li className="flex items-start gap-3"><span className="text-yellow-600 font-bold mt-0.5">⭐</span> You will receive updates via email and phone</li>
-                <li className="flex items-start gap-3"><span className="text-yellow-600 font-bold mt-0.5">⭐</span> Certificate will be available upon approval</li>
+                <li className="flex items-start gap-3"><span className="text-slate-600 font-bold mt-0.5">⭐</span> Check your email for a confirmation message</li>
+                <li className="flex items-start gap-3"><span className="text-slate-600 font-bold mt-0.5">⭐</span> Your application will be reviewed within 48 hours</li>
+                <li className="flex items-start gap-3"><span className="text-slate-600 font-bold mt-0.5">⭐</span> You will receive updates via email and phone</li>
+                <li className="flex items-start gap-3"><span className="text-slate-600 font-bold mt-0.5">⭐</span> Certificate will be available upon approval</li>
               </ul>
             </div>
 
             {countdown > 0 ? (
               <div className="text-center mb-6">
-                <p className="text-2xl font-black text-yellow-600 mb-4">
+                <p className="text-2xl font-black text-slate-600 mb-4">
                   We'll get back to you shortly...
                 </p>
                 <p className="text-lg font-semibold text-slate-600">
@@ -725,7 +725,7 @@ const Registration = () => {
                     <div
                       key={i}
                       className={`h-2 w-8 rounded-full transition-all ${
-                        i < (5 - countdown) ? 'bg-yellow-500' : 'bg-slate-300'
+                        i < (5 - countdown) ? 'bg-slate-500' : 'bg-slate-300'
                       }`}
                     />
                   ))}
@@ -997,8 +997,7 @@ const Registration = () => {
                   <>
                     <Loader className="animate-spin" size={20} /> PROCESSING...
                   </>
-                ) : (
-                  <>
+                ) : (                  <>
                     PROCEED TO SECURE PAYMENT <ArrowRight />
                   </>
                 )}
