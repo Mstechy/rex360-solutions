@@ -76,6 +76,13 @@ const Registration = () => {
     return () => clearInterval(timer);
   }, [step]);
 
+  // Auto scroll to top when success step is reached
+  useEffect(() => {
+    if (step === 'success') {
+      window.scrollTo(0, 0);
+    }
+  }, [step]);
+
   useEffect(() => {
     const fetchPrices = async () => {
       try {
@@ -656,7 +663,7 @@ const Registration = () => {
 
   if (step === 'success') {
     return (
-      <div className="pt-20 pb-20 px-8 text-center bg-gradient-to-br from-yellow-50 to-orange-50 min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
+      <div className="pt-20 pb-20 px-8 text-center bg-white min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
         {/* Golden Celebration Sprinkles */}
         <div className="absolute inset-0 pointer-events-none">
           {[...Array(50)].map((_, i) => (
