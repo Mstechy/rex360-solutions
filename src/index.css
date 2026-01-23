@@ -24,12 +24,6 @@
   img {
     max-width: 100%;
     height: auto;
-    loading: lazy;
-  }
-
-  /* Optimize image loading */
-  img[loading="lazy"] {
-    content-visibility: auto;
   }
 
   /* Reduce paint on scroll */

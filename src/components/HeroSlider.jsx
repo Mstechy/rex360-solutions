@@ -15,13 +15,31 @@ const HeroSlider = () => {
   
   const [current, setCurrent] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadedImages, setLoadedImages] = useState({});
   const timerRef = useRef(null);
 
   useEffect(() => {
     const fetchSlides = async () => {
       try {
         const { data, error } = await supabase.from('hero_slides').select('*').order('id', { ascending: true });
-        if (!error && data && data.length > 0) setSlides(data);
+        console.log('Slides:', data);
+        let slidesToUse = slides; // default slides
+        if (!error && data && data.length > 0) {
+          slidesToUse = data;
+          setSlides(data);
+        }
+        // Preload images for all slides
+        slidesToUse.forEach(slide => {
+          const img = new Image();
+          img.onload = () => {
+            setLoadedImages(prev => ({ ...prev, [slide.id]: true }));
+          };
+          img.onerror = () => {
+            // Fallback to placeholder
+            setLoadedImages(prev => ({ ...prev, [slide.id]: 'https://via.placeholder.com/1920x1080?text=REX360+SOLUTIONS' }));
+          };
+          img.src = slide.image_url;
+        });
       } catch (err) { console.error(err); } finally { setLoading(false); }
     };
     fetchSlides();
@@ -38,7 +56,7 @@ const HeroSlider = () => {
   return (
     <section className="w-full bg-white py-4 md:py-8 px-4 md:px-12 lg:px-24">
       {/* 1. THE CONTAINER: Reduced height slightly for better focus */}
-      <div className="max-w-[1100px] mx-auto relative overflow-hidden rounded-[24px] md:rounded-[40px] shadow-2xl aspect-[16/10] md:aspect-video w-full bg-slate-200">
+      <div className="max-w-[1100px] mx-auto relative overflow-hidden rounded-[24px] md:rounded-[40px] shadow-2xl aspect-[16/10] md:aspect-video w-full bg-slate-800">
         
         {slides.map((slide, index) => (
           <div
@@ -52,9 +70,10 @@ const HeroSlider = () => {
               src={slide.image_url}
               alt={slide.title}
               className="w-full h-full object-cover scale-105"
-              loading="lazy"
+              loading="eager"
+              crossOrigin="anonymous"
             />
-            
+
             <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-black/60 flex flex-col items-center justify-center text-center p-6 z-20">
               
               {/* 3. THE BADGE: Compact and elegant */}
