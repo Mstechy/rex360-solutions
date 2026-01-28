@@ -106,7 +106,7 @@ Professional success screen appears
         Registration Complete
     Your submission has been received
 
-    ✅ Payment Confirmed
+    Payment Confirmed
     Your payment and registration have been
     successfully processed.
 

@@ -100,7 +100,7 @@ The registration form now operates like professional government/official service
 │  Your submission has been received   │
 │                                      │
 │  ┌──────────────────────────────┐   │
-│  │ ✅ Payment Confirmed         │   │
+│  │ Payment Confirmed         │   │
 │  │ Your payment and registration│   │
 │  │ have been successfully       │   │
 │  │ processed.                   │   │

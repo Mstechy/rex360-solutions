@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { usePaystackPayment } from 'react-paystack';
 import { Upload, CheckCircle, MessageCircle, ArrowRight, Loader, X, ArrowLeft, Briefcase, ShieldCheck } from 'lucide-react';
+import { motion } from 'framer-motion';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { supabase, testSupabaseConnection } from '../SupabaseClient';
