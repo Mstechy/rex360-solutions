@@ -4,10 +4,11 @@ import { supabase } from '../SupabaseClient'; // Connect to Admin Data
 
 const AgentIntro = () => {
   // 1. State starts empty so no static/checkerboard image shows by default
-  const [agentImage, setAgentImage] = useState(''); 
+  const [agentImage, setAgentImage] = useState('');
+  const [imageLoaded, setImageLoaded] = useState(false);
 
-  // 2. Fetch the "Real" photo from Supabase
-  
+  // 2. Fetch the "Real" photo from Supabase and preload it
+
   useEffect(() => {
     const fetchAgentPhoto = async () => {
       const { data } = await supabase
@@ -17,7 +18,18 @@ const AgentIntro = () => {
         .single();
 
       if (data && data.image_url) {
-        setAgentImage(data.image_url);
+        // Preload the image for instant display
+        const img = new Image();
+        img.onload = () => {
+          setAgentImage(data.image_url);
+          setImageLoaded(true);
+        };
+        img.onerror = () => {
+          // Fallback: still set the image even if preload fails
+          setAgentImage(data.image_url);
+          setImageLoaded(true);
+        };
+        img.src = data.image_url;
       }
     };
 

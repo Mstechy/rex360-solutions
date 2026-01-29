@@ -10,11 +10,12 @@ import FloatingContact from './components/FloatingContact.jsx';
 
 // 2. HOMEPAGE SECTIONS
 import HeroSlider from './components/HeroSlider.jsx';
-import AgentIntro from './components/AgentIntro.jsx'; 
+import AgentIntro from './components/AgentIntro.jsx';
 import ServicesSection from './components/ServicesSection.jsx';
+import Testimonials from './components/Testimonials.jsx';
 import NewsSection from './components/NewsSection.jsx';
 import FAQ from './components/FAQ.jsx';
-import NigeriaSymbol from './components/NigeriaSymbol.jsx'; 
+import NigeriaSymbol from './components/NigeriaSymbol.jsx';
 
 // 3. PAGES
 import Registration from './pages/Registration.jsx';
@@ -66,6 +67,14 @@ function App() {
                       viewport={{ once: true }}
                     >
                       <ServicesSection />
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, y: 30 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.8, delay: 0.25, ease: "easeOut" }}
+                      viewport={{ once: true }}
+                    >
+                      <Testimonials />
                     </motion.div>
                     <motion.div
                       initial={{ opacity: 0, x: 30 }}

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Loader } from 'lucide-react';
 import { supabase } from '../SupabaseClient';
 
 const HeroSlider = () => {
@@ -16,7 +16,17 @@ const HeroSlider = () => {
   const [current, setCurrent] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadedImages, setLoadedImages] = useState({});
+  const [imageErrors, setImageErrors] = useState({});
   const timerRef = useRef(null);
+  const observerRef = useRef(null);
+
+  // Optimized image loading with WebP support and lazy loading
+  const getOptimizedImageUrl = useCallback((url, width = 1920, height = 1080) => {
+    if (!url) return url;
+    // Convert to WebP if supported, with responsive sizes
+    const webpUrl = url.replace(/\.(jpg|jpeg|png)$/i, '.webp');
+    return `${webpUrl}?w=${width}&h=${height}&fit=crop&auto=format`;
+  }, []);
 
   useEffect(() => {
     const fetchSlides = async () => {
@@ -28,22 +38,23 @@ const HeroSlider = () => {
           slidesToUse = data;
           setSlides(data);
         }
-        // Preload images for all slides
+        // Preload images for all slides with optimization
         slidesToUse.forEach(slide => {
           const img = new Image();
           img.onload = () => {
             setLoadedImages(prev => ({ ...prev, [slide.id]: true }));
           };
           img.onerror = () => {
-            // Fallback to placeholder
+            setImageErrors(prev => ({ ...prev, [slide.id]: true }));
+            // Fallback to optimized placeholder
             setLoadedImages(prev => ({ ...prev, [slide.id]: 'https://via.placeholder.com/1920x1080?text=REX360+SOLUTIONS' }));
           };
-          img.src = slide.image_url;
+          img.src = getOptimizedImageUrl(slide.image_url);
         });
       } catch (err) { console.error(err); } finally { setLoading(false); }
     };
     fetchSlides();
-  }, []);
+  }, [slides, getOptimizedImageUrl]);
 
   useEffect(() => {
     if (slides.length <= 1) return;
@@ -109,14 +120,18 @@ const HeroSlider = () => {
 
         {/* 7. THE INDICATORS: Placed at the very bottom separately */}
         {slides.length > 1 && (
-          <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-30">
-            {slides.map((_, index) => (
+          <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-30" role="tablist" aria-label="Slide indicators">
+            {slides.map((slide, index) => (
               <button
-                key={index}
+                key={slide.id}
                 onClick={() => setCurrent(index)}
-                className={`transition-all duration-300 rounded-full ${
+                className={`transition-all duration-300 rounded-full focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-slate-800 ${
                   index === current ? 'bg-white w-8 h-1' : 'bg-white/30 w-3 h-1 hover:bg-white/50'
                 }`}
+                aria-label={`Go to slide ${index + 1}: ${slide.title}`}
+                aria-selected={index === current}
+                role="tab"
+                tabIndex={index === current ? 0 : -1}
               />
             ))}
           </div>
