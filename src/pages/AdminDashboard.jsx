@@ -184,14 +184,14 @@ const OrdersManager = ({ registrations, fetchData }) => {
       {/* Filter Tabs - Documents */}
       <div>
         <p className="text-[10px] font-black text-slate-500 mb-2 uppercase">Filter by Documents</p>
-        <div className="flex gap-2 bg-white p-4 rounded-xl border shadow-sm mb-4">
-          <button onClick={() => setFilterStatus('all')} className={`px-4 py-2 rounded-lg font-bold text-xs transition-all ${filterStatus === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+        <div className="flex flex-wrap gap-2 bg-white p-4 rounded-xl border shadow-sm mb-4">
+          <button onClick={() => setFilterStatus('all')} className={`px-3 md:px-4 py-2 rounded-lg font-bold text-xs transition-all ${filterStatus === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
             All Clients ({registrations.length})
           </button>
-          <button onClick={() => setFilterStatus('verified')} className={`px-4 py-2 rounded-lg font-bold text-xs transition-all ${filterStatus === 'verified' ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+          <button onClick={() => setFilterStatus('verified')} className={`px-3 md:px-4 py-2 rounded-lg font-bold text-xs transition-all ${filterStatus === 'verified' ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
             ✓ Verified ({registrations.filter(r => getDocumentStatus(r).complete).length})
           </button>
-          <button onClick={() => setFilterStatus('pending')} className={`px-4 py-2 rounded-lg font-bold text-xs transition-all ${filterStatus === 'pending' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+          <button onClick={() => setFilterStatus('pending')} className={`px-3 md:px-4 py-2 rounded-lg font-bold text-xs transition-all ${filterStatus === 'pending' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
             📄 Incomplete Docs ({registrations.filter(r => !getDocumentStatus(r).complete).length})
           </button>
         </div>
@@ -200,14 +200,14 @@ const OrdersManager = ({ registrations, fetchData }) => {
       {/* Filter Tabs - Payment Status */}
       <div>
         <p className="text-[10px] font-black text-slate-500 mb-2 uppercase">Filter by Payment Status</p>
-        <div className="flex gap-2 bg-white p-4 rounded-xl border shadow-sm mb-4">
-          <button onClick={() => setPaymentFilter('all')} className={`px-4 py-2 rounded-lg font-bold text-xs transition-all ${paymentFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+        <div className="flex flex-wrap gap-2 bg-white p-4 rounded-xl border shadow-sm mb-4">
+          <button onClick={() => setPaymentFilter('all')} className={`px-3 md:px-4 py-2 rounded-lg font-bold text-xs transition-all ${paymentFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
             All ({registrations.length})
           </button>
-          <button onClick={() => setPaymentFilter('paid')} className={`px-4 py-2 rounded-lg font-bold text-xs transition-all ${paymentFilter === 'paid' ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+          <button onClick={() => setPaymentFilter('paid')} className={`px-3 md:px-4 py-2 rounded-lg font-bold text-xs transition-all ${paymentFilter === 'paid' ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
             ✅ Paid ({registrations.filter(r => r.payment_status === 'paid').length})
           </button>
-          <button onClick={() => setPaymentFilter('pending')} className={`px-4 py-2 rounded-lg font-bold text-xs transition-all ${paymentFilter === 'pending' ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+          <button onClick={() => setPaymentFilter('pending')} className={`px-3 md:px-4 py-2 rounded-lg font-bold text-xs transition-all ${paymentFilter === 'pending' ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
             ⏳ Unpaid ({registrations.filter(r => r.payment_status !== 'paid').length})
           </button>
         </div>
@@ -389,7 +389,7 @@ const OrdersManager = ({ registrations, fetchData }) => {
                 </div>
                 
                 {selectedClient.full_details?.uploaded_docs && Object.keys(selectedClient.full_details.uploaded_docs).length > 0 ? (
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     {Object.entries(selectedClient.full_details.uploaded_docs).map(([docType, urls]) => {
                       // Filter out empty arrays and null values
                       const validUrls = Array.isArray(urls) ? urls.filter(url => url && typeof url === 'string') : [];
@@ -600,7 +600,7 @@ const RevenueManager = ({ registrations }) => {
   return (
     <div className="space-y-6">
       {/* Revenue Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <div className="bg-white p-4 rounded-xl border shadow-sm">
           <div className="flex items-center justify-between">
             <div>
@@ -915,7 +915,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      <div className="flex">
+      <div className="flex flex-col md:flex-row">
         <div className="hidden md:flex w-64 bg-blue-600 text-white p-4 flex-col min-h-screen sticky top-0">
           <nav className="space-y-2 mt-4">
             {tabs.map(tab => (
@@ -926,7 +926,7 @@ const AdminDashboard = () => {
           </nav>
         </div>
 
-        <div className="flex-grow p-3 md:p-6">
+        <div className="flex-grow p-3 md:p-6 w-full">
           {/* Mobile Header */}
           <div className="md:hidden flex justify-between items-center mb-4 pb-3 border-b">
             <button onClick={() => setMobileMenuOpen(true)} className="p-2 bg-blue-600 text-white rounded-lg">
