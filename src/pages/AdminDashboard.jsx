@@ -68,6 +68,47 @@ const OrdersManager = ({ registrations, fetchData }) => {
     return docMatch && paymentMatch;
   });
 
+  const downloadClientForm = async (client) => {
+    const formData = client.full_details || {};
+
+    // Create text file with form data
+    let content = `REGISTRATION FORM - ${client.service_type}\n`;
+    content += `=====================================\n\n`;
+    content += `PAYMENT REFERENCE: ${client.paystack_ref}\n`;
+    content += `PAYMENT STATUS: ${client.payment_status}\n`;
+    content += `AMOUNT: ₦${parseInt(client.amount).toLocaleString()}\n`;
+    content += `DATE: ${new Date(client.created_at).toLocaleDateString()}\n\n`;
+
+    content += `PERSONAL INFORMATION:\n`;
+    content += `---------------------\n`;
+    content += `Surname: ${client.surname}\n`;
+    content += `First Name: ${client.firstname}\n`;
+    content += `Email: ${client.email || 'N/A'}\n`;
+    content += `Phone: ${client.phone || 'N/A'}\n\n`;
+
+    content += `BUSINESS DETAILS:\n`;
+    content += `-----------------\n`;
+    content += `Service Type: ${client.service_type}\n`;
+    content += `Business Category: ${formData.business_category || 'N/A'}\n`;
+    content += `Business Nature: ${formData.business_nature || 'N/A'}\n\n`;
+
+    content += `ADDITIONAL FORM DATA:\n`;
+    content += `---------------------\n`;
+    Object.entries(formData).forEach(([key, value]) => {
+      if (key !== 'uploaded_docs' && key !== 'business_category' && key !== 'business_nature') {
+        const displayKey = key.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        content += `${displayKey}: ${value || 'N/A'}\n`;
+      }
+    });
+
+    // Download as text file
+    const blob = new Blob([content], { type: 'text/plain' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${client.surname}_${client.firstname}_Registration_Form.txt`;
+    link.click();
+  };
+
   const downloadAllAsZip = async (order) => {
     setZipping(true);
     const zip = new JSZip();
@@ -341,7 +382,22 @@ const OrdersManager = ({ registrations, fetchData }) => {
                 <h3 className="text-sm md:text-lg font-black uppercase">Client Verification Details</h3>
                 <p className="text-[10px] text-slate-300 font-bold mt-1">Ref: {selectedClient.paystack_ref}</p>
               </div>
-              <button onClick={() => setSelectedClient(null)} className="hover:text-red-400 transition-colors"><X size={24} /></button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => downloadClientForm(selectedClient)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1 transition-all"
+                >
+                  📄 Download Form
+                </button>
+                <button
+                  onClick={() => downloadAllAsZip(selectedClient)}
+                  disabled={zipping}
+                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1 transition-all disabled:opacity-50"
+                >
+                  {zipping ? <Loader className="animate-spin" size={12} /> : '📁'} Download Docs
+                </button>
+                <button onClick={() => setSelectedClient(null)} className="hover:text-red-400 transition-colors"><X size={24} /></button>
+              </div>
             </div>
 
             <div className="p-4 md:p-8 space-y-6">
