@@ -4,14 +4,7 @@ import { ArrowRight, Loader } from 'lucide-react';
 import { supabase } from '../SupabaseClient';
 
 const HeroSlider = () => {
-  const [slides, setSlides] = useState([
-    {
-      id: 'default-1',
-      title: 'REX360 SOLUTIONS',
-      subtitle: 'Your Digital Partner for Success',
-      image_url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&h=1080&fit=crop'
-    }
-  ]);
+  const [slides, setSlides] = useState([]);
   
   const [current, setCurrent] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -32,13 +25,19 @@ const HeroSlider = () => {
     const fetchSlides = async () => {
       try {
         const { data, error } = await supabase.from('hero_slides').select('*').order('id', { ascending: true });
-        console.log('Slides:', data);
-        let slidesToUse = slides; // default slides
+        console.log('Slides from Admin Dashboard:', data);
+
         if (!error && data && data.length > 0) {
-          slidesToUse = data;
+          // Show all slides from database, even those without titles
           setSlides(data);
+          console.log('✅ Connected to Supabase - Auto-sliding enabled with', data.length, 'slides from database');
+        } else {
+          console.log('⚠️ No slides found in database - Please add slides manually to hero_slides table');
+          setSlides([]);
         }
+
         // Preload images for all slides with optimization
+        const slidesToUse = data && data.length > 0 ? data : [];
         slidesToUse.forEach(slide => {
           const img = new Image();
           img.onload = () => {
@@ -51,10 +50,15 @@ const HeroSlider = () => {
           };
           img.src = getOptimizedImageUrl(slide.image_url);
         });
-      } catch (err) { console.error(err); } finally { setLoading(false); }
+      } catch (err) {
+        console.error('❌ Error connecting to Admin Dashboard:', err);
+        setSlides([]);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchSlides();
-  }, [slides, getOptimizedImageUrl]);
+  }, [getOptimizedImageUrl]);
 
   useEffect(() => {
     if (slides.length <= 1) return;
@@ -65,10 +69,46 @@ const HeroSlider = () => {
   }, [slides.length]);
 
   return (
-    <section className="w-full bg-white py-4 md:py-8 px-4 md:px-12 lg:px-24">
-      {/* 1. THE CONTAINER: Reduced height slightly for better focus */}
-      <div className="max-w-[1100px] mx-auto relative overflow-hidden rounded-[24px] md:rounded-[40px] shadow-2xl aspect-[16/10] md:aspect-video w-full bg-slate-800">
-        
+    <section className="w-full bg-white py-2 md:py-4 px-4 md:px-12 lg:px-24">
+      {/* 1. THE CONTAINER: Increased height for better first impression */}
+      <div className="max-w-[1100px] mx-auto relative overflow-hidden rounded-[24px] md:rounded-[40px] shadow-2xl h-[75vh] min-h-[500px] w-full bg-slate-800">
+
+        {/* Fallback background when no slides are available */}
+        {slides.length === 0 && (
+          <div className="absolute inset-0">
+            <img
+              src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&h=1080&fit=crop"
+              alt="REX360 Solutions Background"
+              className="w-full h-full object-cover scale-105"
+              loading="eager"
+              crossOrigin="anonymous"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-black/60 flex flex-col items-center justify-center text-center p-6 z-20">
+              {/* Default content when no slides */}
+              <div className="mb-4 flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#008751] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#008751]"></span>
+                </span>
+                <p className="text-white text-[9px] md:text-[11px] font-bold uppercase tracking-[0.2em]">
+                  CAC REX360 SOLUTIONS
+                </p>
+              </div>
+              <h1 className="text-white text-2xl md:text-4xl lg:text-5xl font-black tracking-tight mb-2 drop-shadow-xl">
+                REX360 SOLUTIONS
+              </h1>
+              <p className="text-white/90 text-[13px] md:text-lg font-medium max-w-[260px] md:max-w-xl mx-auto mb-6 leading-relaxed">
+                Your Digital Partner for Success
+              </p>
+              <Link to="/register">
+                <button className="bg-[#008751] hover:bg-white hover:text-[#008751] text-white px-7 py-2.5 md:px-9 md:py-3.5 rounded-xl font-bold uppercase text-[12px] md:text-sm transition-all duration-300 shadow-lg flex items-center gap-2">
+                  Start Now <ArrowRight size={16} />
+                </button>
+              </Link>
+            </div>
+          </div>
+        )}
+
         {slides.map((slide, index) => (
           <div
             key={slide.id}
@@ -114,6 +154,46 @@ const HeroSlider = () => {
                   Start Now <ArrowRight size={16} />
                 </button>
               </Link>
+
+              {/* 6.5. KEY SERVICES PREVIEW: Show main services without scrolling */}
+              <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-2xl mx-auto">
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
+                  <div className="text-white font-bold text-xs md:text-sm uppercase tracking-wide">Business Name</div>
+                  <div className="text-white/80 text-[10px] md:text-xs">From ₦15,000</div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
+                  <div className="text-white font-bold text-xs md:text-sm uppercase tracking-wide">Company Reg</div>
+                  <div className="text-white/80 text-[10px] md:text-xs">From ₦150,000</div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
+                  <div className="text-white font-bold text-xs md:text-sm uppercase tracking-wide">Trademark</div>
+                  <div className="text-white/80 text-[10px] md:text-xs">From ₦50,000</div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
+                  <div className="text-white font-bold text-xs md:text-sm uppercase tracking-wide">NGO Reg</div>
+                  <div className="text-white/80 text-[10px] md:text-xs">From ₦200,000</div>
+                </div>
+              </div>
+
+              {/* 6.6. TRUST INDICATORS: Build credibility at first glance */}
+              <div className="mt-6 flex flex-wrap justify-center items-center gap-4 md:gap-6 text-white/90">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest">24/7 Support</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest">CAC Accredited</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest">Fast Processing</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest">100% Success Rate</span>
+                </div>
+              </div>
             </div>
           </div>
         ))}

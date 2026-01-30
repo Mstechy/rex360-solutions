@@ -46,57 +46,50 @@ function App() {
                   <div className="flex flex-col">
                     <motion.div
                       initial={{ opacity: 0, y: 30 }}
-                      whileInView={{ opacity: 1, y: 0 }}
+                      animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6 }}
-                      viewport={{ once: true }}
                     >
                       <HeroSlider />
                     </motion.div>
                     <motion.div
                       initial={{ opacity: 0, x: -30 }}
-                      whileInView={{ opacity: 1, x: 0 }}
+                      animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
-                      viewport={{ once: true }}
                     >
                       <AgentIntro />
                     </motion.div>
                     <motion.div
                       initial={{ opacity: 0, y: 30 }}
-                      whileInView={{ opacity: 1, y: 0 }}
+                      animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                      viewport={{ once: true }}
                     >
                       <ServicesSection />
                     </motion.div>
                     <motion.div
                       initial={{ opacity: 0, y: 30 }}
-                      whileInView={{ opacity: 1, y: 0 }}
+                      animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.8, delay: 0.25, ease: "easeOut" }}
-                      viewport={{ once: true }}
                     >
                       <Testimonials />
                     </motion.div>
                     <motion.div
                       initial={{ opacity: 0, x: 30 }}
-                      whileInView={{ opacity: 1, x: 0 }}
+                      animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-                      viewport={{ once: true }}
                     >
                       <NewsSection />
                     </motion.div>
                     <motion.div
                       initial={{ opacity: 0, y: 30 }}
-                      whileInView={{ opacity: 1, y: 0 }}
+                      animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
-                      viewport={{ once: true }}
                     >
                       <FAQ />
                     </motion.div>
                     <motion.div
                       initial={{ opacity: 0, scale: 0.9 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
+                      animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
-                      viewport={{ once: true }}
                     >
                       <div className="w-full flex justify-center items-center py-16 bg-white">
                          <NigeriaSymbol />
