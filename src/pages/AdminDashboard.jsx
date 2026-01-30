@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
   Edit3, Trash2, Camera, DollarSign, Newspaper, Layout,
-  Check, Loader, Image as ImageIcon, X, FileText, Eye, Menu
+  Check, Loader, Image as ImageIcon, X, FileText, Eye, Menu, TrendingUp
 } from 'lucide-react';
 import JSZip from 'jszip';
 import { supabase } from '../SupabaseClient';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 // — HELPER: FAST IMAGE COMPRESSOR —
 const compressImage = (file, maxWidth = 1600) => {
@@ -259,8 +260,8 @@ const OrdersManager = ({ registrations, fetchData }) => {
               {filteredRegistrations.map((reg) => {
                 const docStatus = getDocumentStatus(reg);
                 const isPaid = reg.payment_status === 'paid';
-                const businessCategory = reg.business_category || 'N/A';
-                const businessNature = reg.business_nature || 'N/A';
+                const businessCategory = reg.full_details?.business_category || reg.business_category || 'N/A';
+                const businessNature = reg.full_details?.business_nature || reg.business_nature || 'N/A';
                 return (
                   <tr key={reg.id} className="hover:bg-blue-50 transition-colors">
                     <td className="p-2 md:p-4">
@@ -552,7 +553,202 @@ const SlidesManager = ({ slides, fetchData, handleUpload, uploadingId }) => {
   );
 };
 
-//  5. ASSETS MANAGER (FIXED)
+//  5. REVENUE MANAGER - PAYSTACK REVENUE DASHBOARD
+const RevenueManager = ({ registrations }) => {
+  const [resetDashboard, setResetDashboard] = useState(false);
+
+  // Calculate revenue data
+  const paidRegistrations = registrations.filter(reg => reg.payment_status === 'paid');
+
+  // Group by date
+  const revenueByDate = paidRegistrations.reduce((acc, reg) => {
+    const date = new Date(reg.created_at).toISOString().split('T')[0];
+    if (!acc[date]) acc[date] = { amount: 0, count: 0 };
+    acc[date].amount += parseInt(reg.amount);
+    acc[date].count += 1;
+    return acc;
+  }, {});
+
+  // Prepare chart data (last 30 days)
+  const chartData = Object.entries(revenueByDate)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-30)
+    .map(([date, data]) => ({
+      date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      revenue: data.amount,
+      transactions: data.count
+    }));
+
+  // Calculate totals
+  const totalRevenue = paidRegistrations.reduce((sum, reg) => sum + parseInt(reg.amount), 0);
+  const totalTransactions = paidRegistrations.length;
+  const averageTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
+
+  // Today's revenue
+  const today = new Date().toISOString().split('T')[0];
+  const todayRevenue = revenueByDate[today]?.amount || 0;
+  const todayTransactions = revenueByDate[today]?.count || 0;
+
+  const handleResetDashboard = () => {
+    if (window.confirm('Are you sure you want to reset the dashboard view? This will clear the current display but keep all transaction history in the database.')) {
+      setResetDashboard(true);
+      setTimeout(() => setResetDashboard(false), 100); // Temporary reset
+      alert('Dashboard view has been reset. Transaction history remains intact.');
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Revenue Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white p-4 rounded-xl border shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase">Total Revenue</p>
+              <p className="text-2xl font-black text-green-600">₦{totalRevenue.toLocaleString()}</p>
+            </div>
+            <DollarSign className="text-green-500" size={24} />
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase">Total Transactions</p>
+              <p className="text-2xl font-black text-blue-600">{totalTransactions}</p>
+            </div>
+            <FileText className="text-blue-500" size={24} />
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase">Today's Revenue</p>
+              <p className="text-2xl font-black text-purple-600">₦{todayRevenue.toLocaleString()}</p>
+            </div>
+            <TrendingUp className="text-purple-500" size={24} />
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase">Avg Transaction</p>
+              <p className="text-2xl font-black text-orange-600">₦{Math.round(averageTransaction).toLocaleString()}</p>
+            </div>
+            <Check className="text-orange-500" size={24} />
+          </div>
+        </div>
+      </div>
+
+      {/* Revenue Chart */}
+      <div className="bg-white p-6 rounded-xl border shadow-sm">
+        <h3 className="text-lg font-black text-slate-800 mb-4">Revenue Trend (Last 30 Days)</h3>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip
+                formatter={(value, name) => [
+                  name === 'revenue' ? `₦${value.toLocaleString()}` : value,
+                  name === 'revenue' ? 'Revenue' : 'Transactions'
+                ]}
+              />
+              <Line
+                type="monotone"
+                dataKey="revenue"
+                stroke="#16a34a"
+                strokeWidth={3}
+                dot={{ fill: '#16a34a', strokeWidth: 2, r: 4 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Service Revenue Breakdown */}
+      <div className="bg-white p-6 rounded-xl border shadow-sm">
+        <h3 className="text-lg font-black text-slate-800 mb-4">Revenue by Service Type</h3>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={
+              Object.entries(
+                paidRegistrations.reduce((acc, reg) => {
+                  const service = reg.service_type;
+                  if (!acc[service]) acc[service] = 0;
+                  acc[service] += parseInt(reg.amount);
+                  return acc;
+                }, {})
+              ).map(([service, amount]) => ({ service, amount }))
+            }>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="service" />
+              <YAxis />
+              <Tooltip formatter={(value) => `₦${value.toLocaleString()}`} />
+              <Bar dataKey="amount" fill="#3b82f6" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Recent Transactions */}
+      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+        <div className="p-4 border-b">
+          <h3 className="text-lg font-black text-slate-800">Recent Paystack Transactions</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left min-w-[600px]">
+            <thead className="bg-slate-50 text-[9px] md:text-[10px] uppercase font-black text-slate-400">
+              <tr>
+                <th className="p-2 md:p-4">Date</th>
+                <th className="p-2 md:p-4">Client</th>
+                <th className="p-2 md:p-4">Service</th>
+                <th className="p-2 md:p-4">Amount</th>
+                <th className="p-2 md:p-4">Reference</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {paidRegistrations.slice(0, 10).map((reg) => (
+                <tr key={reg.id} className="hover:bg-blue-50 transition-colors">
+                  <td className="p-2 md:p-4">
+                    <p className="font-bold text-slate-800 text-sm">
+                      {new Date(reg.created_at).toLocaleDateString()}
+                    </p>
+                  </td>
+                  <td className="p-2 md:p-4">
+                    <p className="font-bold text-slate-800 text-sm">
+                      {reg.surname} {reg.firstname}
+                    </p>
+                  </td>
+                  <td className="p-2 md:p-4">
+                    <p className="font-bold text-blue-600 text-xs md:text-sm">
+                      {reg.service_type}
+                    </p>
+                  </td>
+                  <td className="p-2 md:p-4">
+                    <p className="font-black text-green-600 text-sm md:text-lg">
+                      ₦{parseInt(reg.amount).toLocaleString()}
+                    </p>
+                  </td>
+                  <td className="p-2 md:p-4">
+                    <p className="text-xs font-mono text-slate-600">
+                      {reg.paystack_ref}
+                    </p>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+//  6. ASSETS MANAGER (FIXED)
 const AssetsManager = ({ assets, fetchData, handleUpload, uploadingId }) => {
   // STRICT KEYS: Matches AgentIntro.jsx and NigeriaSymbol.jsx
   const assetSettings = [
@@ -564,24 +760,24 @@ const AssetsManager = ({ assets, fetchData, handleUpload, uploadingId }) => {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
       {assetSettings.map((item) => {
         const assetData = assets.find(a => a.key === item.key) || {};
-        
+
         return (
           <div key={item.key} className="bg-white p-6 md:p-8 rounded-2xl border shadow-sm text-center flex flex-col items-center">
             <h4 className="font-bold text-[10px] uppercase text-slate-400 mb-6 tracking-widest">{item.label}</h4>
-            
+
             <div className="w-40 h-40 md:w-52 md:h-52 rounded-full overflow-hidden border-4 border-white shadow-xl mb-6 bg-slate-50">
-              <img 
-                src={assetData.image_url || 'https://placehold.co/400x400?text=Upload+Asset'} 
-                className={`w-full h-full object-cover ${uploadingId === item.key ? 'opacity-30 animate-pulse' : ''}`} 
+              <img
+                src={assetData.image_url || 'https://placehold.co/400x400?text=Upload+Asset'}
+                className={`w-full h-full object-cover ${uploadingId === item.key ? 'opacity-30 animate-pulse' : ''}`}
                 alt={item.label}
               />
             </div>
 
             <label className="bg-blue-600 text-white px-8 py-3 rounded-full font-black text-[10px] md:text-xs cursor-pointer block hover:bg-green-600 transition-all shadow-lg uppercase">
               {uploadingId === item.key ? 'CONNECTING...' : 'REPLACE PHOTO'}
-              <input 
-                type="file" 
-                className="hidden" 
+              <input
+                type="file"
+                className="hidden"
                 accept="image/*"
                 onChange={async (e) => {
                   const file = e.target.files[0];
@@ -594,7 +790,7 @@ const AssetsManager = ({ assets, fetchData, handleUpload, uploadingId }) => {
                     // 2. Update the exact key and image_url column
                     const { error } = await supabase
                       .from('site_assets')
-                      .update({ image_url: newUrl }) 
+                      .update({ image_url: newUrl })
                       .eq('key', item.key);
 
                     if (error) {
@@ -696,6 +892,7 @@ const AdminDashboard = () => {
 
   const tabs = [
     { id: 'orders', icon: <FileText size={18}/>, label: 'Orders' },
+    { id: 'revenue', icon: <TrendingUp size={18}/>, label: 'Revenue' },
     { id: 'slides', icon: <Layout size={18}/>, label: 'Slides' },
     { id: 'services', icon: <DollarSign size={18}/>, label: 'Prices' },
     { id: 'news', icon: <Newspaper size={18}/>, label: 'News' },
@@ -768,6 +965,7 @@ const AdminDashboard = () => {
           </header>
 
           {activeTab === 'orders' && <OrdersManager registrations={data.registrations} fetchData={fetchData} />}
+          {activeTab === 'revenue' && <RevenueManager registrations={data.registrations} />}
           {activeTab === 'services' && <ServicesManager services={data.services} fetchData={fetchData} />}
           {activeTab === 'news' && <NewsManager news={data.news} fetchData={fetchData} />}
           {activeTab === 'slides' && <SlidesManager slides={data.slides} fetchData={fetchData} handleUpload={handleUpload} uploadingId={uploadingId} />}
