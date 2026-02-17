@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+
+import React, { useState, useEffect,} from 'react';
 import { supabase } from '../SupabaseClient'; // Connect to Admin Data
 
 const NigeriaSymbol = () => {
@@ -8,14 +9,26 @@ const NigeriaSymbol = () => {
   // 2. Fetch the "Real" seal from Supabase
   useEffect(() => {
     const fetchSeal = async () => {
-      const { data } = await supabase
+      console.log('🔍 Fetching oat_seal from Supabase...');
+      
+      const { data, error } = await supabase
         .from('site_assets')
         .select('image_url')
         .eq('key', 'oat_seal') // Matches the key we set in Admin
         .single();
 
+      console.log('📥 Supabase response for oat_seal:', { data, error });
+
+      if (error) {
+        console.error('❌ Error fetching oat_seal:', error);
+        return;
+      }
+
       if (data && data.image_url) {
+        console.log('✅ OAT Seal URL fetched:', data.image_url);
         setSealImage(data.image_url);
+      } else {
+        console.log('⚠️ No image_url in data for oat_seal');
       }
     };
 

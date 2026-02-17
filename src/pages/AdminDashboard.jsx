@@ -16,6 +16,7 @@ const compressImage = (file, maxWidth = 1600) => {
       const img = new window.Image();
       img.src = event.target.result;
       img.onload = () => {
+        
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
@@ -843,13 +844,19 @@ const AssetsManager = ({ assets, fetchData, handleUpload, uploadingId }) => {
                   const newUrl = await handleUpload(file, item.key);
 
                   if (newUrl) {
-                    // 2. Update the exact key and image_url column
+                    // 2. Use upsert to insert if not exists, or update if exists
                     const { error } = await supabase
                       .from('site_assets')
-                      .update({ image_url: newUrl })
-                      .eq('key', item.key);
+                      .upsert({ 
+                        key: item.key, 
+                        image_url: newUrl 
+                      }, { 
+                        onConflict: 'key',
+                        ignoreDuplicates: false 
+                      });
 
                     if (error) {
+                      console.error("Backend Error:", error);
                       alert("Backend Error: " + error.message);
                     } else {
                       await fetchData();
@@ -885,23 +892,67 @@ const AdminDashboard = () => {
     
     try {
       console.log('📡 Connecting to Supabase...');
+      console.log('🔌 Supabase URL:', supabase.supabaseUrl || 'using default');
       
-      const [r, s, n, sl, a] = await Promise.all([
-        supabase.from('registrations').select('*').order('created_at', { ascending: false }),
-        supabase.from('services').select('*').order('display_order'),
-        supabase.from('news').select('*').order('id', { ascending: false }),
-        supabase.from('hero_slides').select('*').order('id'),
-        supabase.from('site_assets').select('*')
-      ]);
+      // Test each table one by one for better error handling
+      let r, s, n, sl, a;
+      
+      try {
+        console.log('📋 Fetching registrations...');
+        const result = await supabase.from('registrations').select('*').order('created_at', { ascending: false });
+        if (result.error) throw new Error(`Registrations: ${result.error.message}`);
+        r = result;
+        console.log('✅ Registrations fetched:', r.data?.length || 0);
+      } catch (err) {
+        console.error('❌ Registrations error:', err.message);
+        throw new Error(`Registrations table error: ${err.message}`);
+      }
+      
+      try {
+        console.log('💰 Fetching services...');
+        const result = await supabase.from('services').select('*').order('display_order');
+        if (result.error) throw new Error(`Services: ${result.error.message}`);
+        s = result;
+        console.log('✅ Services fetched:', s.data?.length || 0);
+      } catch (err) {
+        console.error('❌ Services error:', err.message);
+        throw new Error(`Services table error: ${err.message}`);
+      }
+      
+      try {
+        console.log('📰 Fetching news...');
+        const result = await supabase.from('news').select('*').order('id', { ascending: false });
+        if (result.error) throw new Error(`News: ${result.error.message}`);
+        n = result;
+        console.log('✅ News fetched:', n.data?.length || 0);
+      } catch (err) {
+        console.error('❌ News error:', err.message);
+        throw new Error(`News table error: ${err.message}`);
+      }
+      
+      try {
+        console.log('🖼️ Fetching hero slides...');
+        const result = await supabase.from('hero_slides').select('*').order('id');
+        if (result.error) throw new Error(`Slides: ${result.error.message}`);
+        sl = result;
+        console.log('✅ Slides fetched:', sl.data?.length || 0);
+      } catch (err) {
+        console.error('❌ Slides error:', err.message);
+        throw new Error(`Hero slides table error: ${err.message}`);
+      }
+      
+      try {
+        console.log('📦 Fetching site assets...');
+        const result = await supabase.from('site_assets').select('*');
+        if (result.error) throw new Error(`Assets: ${result.error.message}`);
+        a = result;
+        console.log('✅ Assets fetched:', a.data?.length || 0);
+      } catch (err) {
+        console.error('❌ Assets error:', err.message);
+        throw new Error(`Site assets table error: ${err.message}`);
+      }
 
-      // Check for errors
-      if (r.error) throw new Error(`Registrations: ${r.error.message}`);
-      if (s.error) throw new Error(`Services: ${s.error.message}`);
-      if (n.error) throw new Error(`News: ${n.error.message}`);
-      if (sl.error) throw new Error(`Slides: ${sl.error.message}`);
-      if (a.error) throw new Error(`Assets: ${a.error.message}`);
-
-      console.log(`✅ Supabase Connected!`);
+      console.log(`✅ Supabase Connected Successfully!`);
       console.log(`📋 Registrations: ${r.data?.length || 0} clients`);
       console.log(`💰 Services: ${s.data?.length || 0} items`);
       console.log(`📰 News: ${n.data?.length || 0} posts`);
@@ -920,9 +971,9 @@ const AdminDashboard = () => {
       setErrorMsg('');
     } catch (error) {
       console.error('❌ Supabase Connection Error:', error);
+      console.error('Error details:', error);
       setConnectionStatus('error');
       setErrorMsg(error.message || 'Failed to connect to Supabase');
-      alert(`⚠️ Database Error: ${error.message}\n\nPlease check your Supabase connection or contact support.`);
     } finally {
       setLoading(false);
     }
@@ -934,12 +985,30 @@ const AdminDashboard = () => {
     try {
       const optimizedFile = await compressImage(file, contextId === 'slide-upload' ? 1600 : 800);
       const fileName = `${Date.now()}_${contextId}.jpg`;
-      const { error } = await supabase.storage.from('images').upload(fileName, optimizedFile);
+      
+      // Upload with public read access
+      const { data, error } = await supabase.storage
+        .from('images')
+        .upload(fileName, optimizedFile, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: 'image/jpeg'
+        });
+      
       if (error) throw error;
-      const { data } = supabase.storage.from('images').getPublicUrl(fileName);
+      
+      // Get the public URL properly
+      const { data: urlData } = supabase.storage
+        .from('images')
+        .getPublicUrl(fileName);
+      
+      const publicUrl = urlData.publicUrl;
+      
+      console.log('✅ Upload successful:', publicUrl);
       setUploadingId(null);
-      return data.publicUrl;
+      return publicUrl;
     } catch (error) {
+      console.error('❌ Upload error:', error);
       alert("Upload Failed: " + error.message);
       setUploadingId(null);
       return null;

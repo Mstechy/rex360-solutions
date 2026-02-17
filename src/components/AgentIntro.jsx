@@ -11,25 +11,28 @@ const AgentIntro = () => {
 
   useEffect(() => {
     const fetchAgentPhoto = async () => {
-      const { data } = await supabase
+      console.log('🔍 Fetching agent photo from Supabase...');
+      
+      const { data, error } = await supabase
         .from('site_assets')
         .select('image_url')
         .eq('key', 'agent_photo') // We look for the key we set in Admin
         .single();
 
+      console.log('📥 Supabase response:', { data, error });
+
+      if (error) {
+        console.error('❌ Error fetching agent photo:', error);
+        return;
+      }
+
       if (data && data.image_url) {
-        // Preload the image for instant display
-        const img = new Image();
-        img.onload = () => {
-          setAgentImage(data.image_url);
-          setImageLoaded(true);
-        };
-        img.onerror = () => {
-          // Fallback: still set the image even if preload fails
-          setAgentImage(data.image_url);
-          setImageLoaded(true);
-        };
-        img.src = data.image_url;
+        console.log('✅ Image URL fetched:', data.image_url);
+        // Set the image URL directly - no preload needed
+        setAgentImage(data.image_url);
+        setImageLoaded(true);
+      } else {
+        console.log('⚠️ No image_url in data');
       }
     };
 

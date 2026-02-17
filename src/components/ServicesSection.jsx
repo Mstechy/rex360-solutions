@@ -17,6 +17,7 @@ const iconMap = {
 const ServicesSection = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -25,7 +26,13 @@ const ServicesSection = () => {
         .select('*')
         .order('display_order', { ascending: true });
 
-      if (data) setServices(data);
+      if (error) {
+        console.error('❌ Supabase Error:', error.message);
+        setError(error.message);
+      } else if (data) {
+        setServices(data);
+        setError(null);
+      }
       setLoading(false);
     };
 
@@ -71,7 +78,7 @@ const ServicesSection = () => {
                 {service.name}
                 </h3>
 
-                <p className="text-slate-500 text-xs md:text-sm mb-6 md:mb-8 leading-relaxed font-medium flex-grow">
+                <p className="text-slate-500 text-xs md:text-sm mb-4 md:mb-6 leading-relaxed font-medium flex-grow">
                 {service.name === 'Business Name' && "CAC business name registration under CAMA. Processing: 24-48 hours."}
                 {service.name.includes('Company') && "Limited liability company incorporation with CAC registration. Processing: 3-5 working days."}
                 {service.name.includes('NGO') && "NGO registration as incorporated trustee with CAC certification. Processing: 5-7 working days."}
@@ -81,13 +88,13 @@ const ServicesSection = () => {
                 {service.name === 'Annual Returns' && "Mandatory CAC annual filings to maintain active status. Processing: 24-48 hours."}
                 </p>
 
-                <div className="flex flex-col mb-6 md:mb-8">
+                <div className="flex flex-col mb-4 md:mb-6">
                 {service.old_price && (
                     <span className="text-slate-300 line-through text-xs md:text-sm italic font-bold">
                     ₦{parseInt(service.old_price).toLocaleString()}
                     </span>
                 )}
-                <span className="text-2xl md:text-3xl font-black text-cac-green tracking-tighter">
+                <span className="text-xl md:text-2xl font-black text-cac-green tracking-tighter">
                     ₦{parseInt(service.price).toLocaleString()}
                 </span>
                 </div>
@@ -95,11 +102,14 @@ const ServicesSection = () => {
                 {/* We use the fixed 'linkName' here */}
                 <Link to={`/register/${linkName}`} className="block">
                 <button
-                  className="flex items-center justify-between w-full bg-slate-900 text-white px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl font-black group-hover:bg-cac-green transition-all duration-300 shadow-lg active:scale-95 text-xs md:text-sm"
+                  className="group relative w-full overflow-hidden bg-gradient-to-r from-slate-900 to-slate-800 hover:from-cac-blue hover:to-cac-green text-white px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-md sm:rounded-lg md:rounded-xl font-bold transition-all duration-500 shadow-md hover:shadow-lg active:scale-95 text-xs sm:text-xs md:text-sm border border-slate-700 hover:border-cac-green/50"
                   aria-label={`Register for ${service.name} service`}
                 >
-                    <span className="uppercase tracking-widest">Register Now</span>
-                    <ArrowRight className="group-hover:translate-x-2 transition-transform" size={16} />
+                  <div className="relative z-10 flex items-center justify-between">
+                    <span className="uppercase tracking-wider font-extrabold text-xs">Register Now</span>
+                    <ArrowRight className="group-hover:translate-x-0.5 group-hover:scale-105 transition-all duration-300" size={12} />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-cac-green/20 to-cac-blue/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 </button>
                 </Link>
             </div>

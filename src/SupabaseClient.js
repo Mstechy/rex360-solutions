@@ -1,10 +1,38 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Use environment variables for Supabase configuration
+// Fallback to correct values if environment variables are not set
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://oohabvgbrzrewwrekkfy.supabase.co';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vaGFidmdicnpyZXd3cmVra2Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzODg1NjMsImV4cCI6MjA4MTk2NDU2M30.ybMOF5K1dp-mxxaSCtXGdWZd8t7z2jxClbNMkbIMzVE';
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// Debug logging
+console.log('🔌 Supabase Client Initialized');
+console.log('📍 URL:', supabaseUrl);
+console.log('🔑 Key configured:', supabaseKey ? 'YES' : 'NO');
+
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+  db: {
+    schema: 'public',
+  },
+});
+
+// Test connection on load - wait for client to be ready
+setTimeout(() => {
+  supabase.from('services').select('id').limit(1).then(({ data, error }) => {
+    if (error) {
+      console.error('❌ Supabase Connection Error:', error.message);
+      console.error('Error code:', error.code);
+      console.error('Error details:', error);
+    } else {
+      console.log('✅ Supabase Connected Successfully!');
+      console.log('📊 Services table data:', data);
+    }
+  });
+}, 1000);
 
 // Test function
 export const testSupabaseConnection = async () => {

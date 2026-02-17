@@ -56,8 +56,9 @@ const Navbar = () => {
           {/* DESKTOP CTA */}
           <div className="hidden md:block">
             <Link to="/register">
-              <button className="bg-cac-green hover:bg-cac-blue text-white px-8 py-3 rounded-full font-extrabold text-sm transition-all transform hover:scale-105 shadow-md">
-                GET STARTED
+              <button className="group relative overflow-hidden bg-gradient-to-r from-cac-green to-emerald-500 hover:from-emerald-400 hover:to-green-500 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-full font-extrabold text-sm transition-all duration-500 transform hover:scale-105 shadow-xl hover:shadow-2xl border-2 border-transparent hover:border-white/30">
+                <span className="relative z-10 tracking-wider">GET STARTED</span>
+                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full"></div>
               </button>
             </Link>
           </div>
@@ -67,6 +68,9 @@ const Navbar = () => {
             <button 
               onClick={() => setIsOpen(!isOpen)}
               className="text-slate-600 p-2 focus:outline-none hover:bg-slate-50 rounded-lg"
+              aria-expanded={isOpen}
+              aria-controls="mobile-menu"
+              aria-label={isOpen ? "Close menu" : "Open menu"}
             >
               {isOpen ? <X size={32} /> : <Menu size={32} />}
             </button>
@@ -75,7 +79,13 @@ const Navbar = () => {
       </div>
 
       {/* MOBILE MENU */}
-      <div className={`lg:hidden transition-all duration-300 ease-in-out bg-white border-b border-slate-200 overflow-hidden ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+      <div 
+        id="mobile-menu"
+        className={`lg:hidden transition-all duration-300 ease-in-out bg-white border-b border-slate-200 overflow-hidden ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
+        aria-hidden={!isOpen}
+        role="navigation"
+        aria-label="Mobile navigation"
+      >
         <div className="px-6 pt-2 pb-6 space-y-4">
           {navLinks.map((link) => (
              link.isExternal ? (

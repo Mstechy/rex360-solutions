@@ -79,18 +79,22 @@ const NewsPage = () => {
             <div className="flex justify-between items-center mb-8">
               <button
                 onClick={prevNews}
-                className="flex items-center gap-2 bg-cac-blue text-white px-6 py-3 rounded-full hover:bg-blue-700 transition-colors font-bold uppercase text-xs tracking-widest"
+                className="group relative overflow-hidden flex items-center gap-2 bg-gradient-to-r from-cac-blue to-[#1e40af] hover:from-[#1e40af] hover:to-cac-blue text-white px-6 py-3 rounded-full font-bold uppercase text-xs tracking-widest transition-all duration-300 hover:shadow-lg active:scale-95 border border-white/20"
               >
-                <ChevronLeft size={16} /> Previous
+                <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform duration-300" /> 
+                <span className="relative z-10">Previous</span>
+                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full"></div>
               </button>
               <div className="text-slate-400 font-bold uppercase text-xs tracking-widest">
                 {currentNewsIndex + 1} of {news.length}
               </div>
               <button
                 onClick={nextNews}
-                className="flex items-center gap-2 bg-cac-blue text-white px-6 py-3 rounded-full hover:bg-blue-700 transition-colors font-bold uppercase text-xs tracking-widest"
+                className="group relative overflow-hidden flex items-center gap-2 bg-gradient-to-r from-cac-blue to-[#1e40af] hover:from-[#1e40af] hover:to-cac-blue text-white px-6 py-3 rounded-full font-bold uppercase text-xs tracking-widest transition-all duration-300 hover:shadow-lg active:scale-95 border border-white/20"
               >
-                Next <ChevronRight size={16} />
+                <span className="relative z-10">Next</span>
+                <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform duration-300" />
+                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full"></div>
               </button>
             </div>
 

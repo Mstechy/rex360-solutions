@@ -34,6 +34,65 @@
   .animate-on-scroll {
     will-change: transform, opacity;
   }
+
+  /* ============================================
+     ACCESSIBILITY - FOCUS INDICATORS
+     ============================================ */
+  
+  /* Visible focus indicator for keyboard navigation */
+  :focus-visible {
+    outline: 3px solid #10b981; /* cac-green */
+    outline-offset: 2px;
+  }
+
+  /* Remove default focus for mouse users, keep for keyboard */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Ensure buttons have visible focus */
+  button:focus-visible,
+  [role="button"]:focus-visible {
+    outline: 3px solid #10b981;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.3);
+  }
+
+  /* Ensure links have visible focus */
+  a:focus-visible {
+    outline: 3px solid #10b981;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* Ensure inputs have visible focus */
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 3px solid #10b981;
+    outline-offset: 1px;
+  }
+
+  /* Skip Link Styles */
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: 16px;
+    z-index: 9999;
+    padding: 16px 24px;
+    background: #10b981;
+    color: white;
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: 0 0 8px 8px;
+    transition: top 0.3s ease;
+  }
+
+  .skip-link:focus {
+    top: 0;
+    outline: 3px solid #047857;
+    outline-offset: 2px;
+  }
 }
 
 @layer components {

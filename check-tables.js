@@ -1,4 +1,4 @@
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
   'https://oohabvgbrzrewwrekkfy.supabase.co',
@@ -48,6 +48,38 @@ async function checkTables() {
     }
   } catch (err) {
     console.log('❌ services table: ERROR -', err.message);
+  }
+
+  // Check site_assets table
+  try {
+    const { data, error } = await supabase.from('site_assets').select('*').limit(5);
+    if (error) {
+      console.log('❌ site_assets table: DOES NOT EXIST');
+      console.log('   Error:', error.message);
+    } else {
+      console.log('✅ site_assets table: EXISTS');
+      console.log('   Records:', data.length);
+      if (data.length > 0) {
+        console.log('   Data:', data.map(d => `${d.key}: ${d.image_url}`).join(', '));
+      }
+    }
+  } catch (err) {
+    console.log('❌ site_assets table: ERROR -', err.message);
+  }
+
+  // Check storage buckets
+  try {
+    const { data, error } = await supabase.storage.listBuckets();
+    if (error) {
+      console.log('❌ Storage buckets: ERROR -', error.message);
+    } else {
+      console.log('✅ Storage buckets:');
+      data.forEach(bucket => {
+        console.log(`   - ${bucket.name} (${bucket.public ? 'public' : 'private'})`);
+      });
+    }
+  } catch (err) {
+    console.log('❌ Storage buckets: ERROR -', err.message);
   }
 
   console.log('\n✨ Check complete!');

@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { usePaystackPayment } from 'react-paystack';
-import { Upload, CheckCircle, MessageCircle, ArrowRight, Loader, X, ArrowLeft, Briefcase, ShieldCheck } from 'lucide-react';
+import { Upload, CheckCircle, MessageCircle, ArrowRight, Loader, X, ArrowLeft, Briefcase, ShieldCheck, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -327,22 +326,98 @@ const Registration = () => {
     }
   };
 
-  // Paystack Config - simplified to avoid build issues
-  const paystackConfig = {
-    reference: (new Date()).getTime().toString(),
-    email: "customer@example.com",
-    amount: currentPrice * 100,
-    publicKey: 'pk_test_1dc8f242ed09075faee33e86dff64ce401918129',
+  // Paystack Config - Get public key from environment
+  const paystackPublicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || '';
+  
+  // Debug: Log Paystack key status (only show first few chars for security)
+  console.log('🔑 Paystack Public Key:', paystackPublicKey ? `${paystackPublicKey.substring(0, 10)}...` : 'NOT SET');
+
+  // Paystack inline handler using official method
+  const handlePaystackPayment = (config) => {
+    if (typeof window !== 'undefined' && window.PaystackPop) {
+      const paystack = window.PaystackPop.setup({
+        key: config.publicKey,
+        email: config.email,
+        amount: config.amount,
+        currency: config.currency || "NGN",
+        reference: config.reference,
+        metadata: config.metadata,
+        onClose: function() {
+          console.log('⚠️ Payment onClose called');
+          setUploadStatus(null);
+          setStatusMessage('');
+          alert("Payment not completed. Your registration was not submitted.");
+        },
+        callback: function(response) {
+          console.log('✅ Payment callback called:', response);
+          setUploadStatus('uploading');
+          setStatusMessage('Processing your registration...');
+          
+          // Process the successful payment
+          const paystackRef = response.reference || config.reference;
+          
+          saveToDatabase(paystackRef)
+            .then(() => {
+              // Clear form silently
+              setFiles({ "ID Card": [], "Signature": [], "Passport": [] });
+              setPreviews({ "ID Card": [], "Signature": [], "Passport": [] });
+              setCategory('');
+              setNature('');
+              
+              const form = document.querySelector('form');
+              if (form) form.reset();
+              
+              document.querySelectorAll('input[type="text"]').forEach(input => input.value = '');
+              document.querySelectorAll('input[type="email"]').forEach(input => input.value = '');
+              document.querySelectorAll('input[type="date"]').forEach(input => input.value = '');
+              document.querySelectorAll('input[type="file"]').forEach(input => input.value = '');
+              document.querySelectorAll('textarea').forEach(ta => ta.value = '');
+              document.querySelectorAll('select').forEach(sel => sel.selectedIndex = 0);
+              
+              Object.values(previews).forEach(urls => {
+                urls.forEach(url => URL.revokeObjectURL(url));
+              });
+              
+              setUploadStatus('success');
+              setStatusMessage('');
+              setStep('success');
+            })
+            .catch((err) => {
+              console.error('❌ Error in payment callback:', err);
+              setUploadStatus('error');
+              setStatusMessage('');
+              alert(`Registration error: ${err.message}`);
+            });
+        }
+      });
+      
+      paystack.openIframe();
+    } else {
+      // Fallback: Load Paystack script dynamically
+      console.log('⚠️ Paystack not loaded, loading script...');
+      const script = document.createElement('script');
+      script.src = 'https://js.paystack.co/v1/inline.js';
+      script.onload = () => {
+        handlePaystackPayment(config);
+      };
+      script.onerror = () => {
+        alert('Failed to load payment system. Please check your internet connection and try again.');
+      };
+      document.head.appendChild(script);
+    }
   };
 
-  const initializePayment = usePaystackPayment(paystackConfig);
-
-  const handleProcess = (e) => {
+  const handleProcess = async (e) => {
     e.preventDefault();
     
+    console.log('🔄 Starting handleProcess...');
+    console.log('📋 Current price:', currentPrice);
+    console.log('🔑 Paystack key exists:', !!paystackPublicKey);
+    
     // Validate price
-    if (currentPrice === 0) {
+    if (!currentPrice || currentPrice === 0) {
         alert("Service fee information is loading. Please try again.");
+        console.error('❌ Price is 0 or undefined');
         return;
     }
     
@@ -350,65 +425,74 @@ const Registration = () => {
     const missingDocs = Object.keys(files).filter(doc => files[doc].length === 0);
     if (missingDocs.length > 0) {
         alert(`Please provide your ${missingDocs.join(', ')}`);
+        console.log('⚠️ Missing documents:', missingDocs);
         return; 
     }
     
     // Validate form fields
-    const requiredFields = ['surname', 'firstname', 'email', 'phone'];
-    const missingFields = requiredFields.filter(field => {
-      const val = document.getElementById(field)?.value;
-      return !val;
-    });
+    const emailVal = document.getElementById('email')?.value;
+    const phoneVal = document.getElementById('phone')?.value;
+    const surnameVal = document.getElementById('surname')?.value;
+    const firstnameVal = document.getElementById('firstname')?.value;
     
-    if (missingFields.length > 0) {
-        alert(`Please complete all required fields`);
+    if (!emailVal || !phoneVal || !surnameVal || !firstnameVal) {
+        alert("Please complete all required fields: surname, firstname, email, phone");
+        console.log('⚠️ Missing required fields');
         return;
     }
     
-    // Clean submission - no technical messages
-    initializePayment({
-      onSuccess: async (reference) => {
-        setUploadStatus('uploading');
-        setStatusMessage('Processing your registration...');
-        
-        try {
-          await saveToDatabase(reference.reference);
-          
-          // Clear form silently
-          setFiles({ "ID Card": [], "Signature": [], "Passport": [] });
-          setPreviews({ "ID Card": [], "Signature": [], "Passport": [] });
-          setCategory('');
-          setNature('');
-          
-          const form = document.querySelector('form');
-          if (form) form.reset();
-          
-          document.querySelectorAll('input[type="text"]').forEach(input => input.value = '');
-          document.querySelectorAll('input[type="email"]').forEach(input => input.value = '');
-          document.querySelectorAll('input[type="date"]').forEach(input => input.value = '');
-          document.querySelectorAll('input[type="file"]').forEach(input => input.value = '');
-          document.querySelectorAll('textarea').forEach(ta => ta.value = '');
-          document.querySelectorAll('select').forEach(sel => sel.selectedIndex = 0);
-          
-          Object.values(previews).forEach(urls => {
-            urls.forEach(url => URL.revokeObjectURL(url));
-          });
-          
-          setUploadStatus('success');
-          setStatusMessage('');
-          setStep('success');
-        } catch (err) {
-          setUploadStatus('error');
-          setStatusMessage('');
-          alert(`Registration error. Please contact support if this persists.`);
-        }
-      },
-      onClose: () => {
-        setUploadStatus(null);
-        setStatusMessage('');
-        alert("Payment not completed. Your registration was not submitted.");
-      }
+    // Check if public key is configured
+    if (!paystackPublicKey) {
+      alert("Payment system is not configured. Please contact support.");
+      console.error('❌ Paystack public key is empty!');
+      return;
+    }
+    
+    // Build payment config with proper types
+    const email = String(emailVal).trim();
+    const phone = String(phoneVal).trim();
+    
+    // Ensure amount is a valid integer in kobo (minimum 100 kobo = ₦1)
+    const priceValue = Number(currentPrice) || 0;
+    const amountInKobo = Math.max(100, Math.floor(priceValue * 100));
+    
+    // Generate a simple alphanumeric reference
+    const reference = `Rex360${Date.now()}${Math.random().toString(36).substring(7).toUpperCase()}`;
+    
+    console.log('💰 Payment config:', {
+      publicKey: paystackPublicKey.substring(0, 15) + '...',
+      email,
+      amount: amountInKobo,
+      currency: "NGN",
+      reference
     });
+    
+    // Use official Paystack inline method
+    console.log('🔄 Using Paystack inline...');
+    
+    const config = {
+      publicKey: paystackPublicKey,
+      email: email,
+      amount: amountInKobo,
+      currency: "NGN",
+      reference: reference,
+      metadata: {
+        phone: phone,
+        service_type: serviceType
+      }
+    };
+    
+    try {
+      console.log('🚀 Calling handlePaystackPayment with config:', config);
+      
+      // Initialize payment using official Paystack inline
+      handlePaystackPayment(config);
+      
+      console.log('✅ handlePaystackPayment called - waiting for Paystack modal');
+    } catch (err) {
+      console.error('❌ Error initializing payment:', err);
+      alert(`Payment initialization error: ${err.message}. Please disable popup blocker or contact support.`);
+    }
   };
 
   const NatureOfBusinessSelector = () => (
@@ -812,14 +896,19 @@ const Registration = () => {
                 <button
                   key={name}
                   onClick={() => { setServiceType(name); navigate(`/register/${name.replace(/\s+/g, '-')}`); }}
-                  className={`text-left px-3 py-3 rounded-xl font-bold text-xs transition-all ${
-                    serviceType === name ? 'bg-cac-blue text-white shadow-lg' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                  className={`group relative overflow-hidden text-left px-3 py-3 rounded-xl font-bold text-xs transition-all duration-300 border-2 ${
+                    serviceType === name 
+                      ? 'bg-gradient-to-r from-cac-blue to-[#1e40af] text-white shadow-xl border-cac-blue scale-105' 
+                      : 'bg-gradient-to-r from-slate-50 to-gray-100 text-slate-600 hover:from-slate-100 hover:to-slate-200 border-slate-200 hover:border-slate-300 hover:shadow-md'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <Briefcase size={14} className={serviceType === name ? "text-cac-green" : "opacity-20"} />
-                    <span className="truncate">{name}</span>
+                  <div className="flex items-center gap-2 relative z-10">
+                    <Briefcase size={14} className={`transition-all duration-300 ${serviceType === name ? "text-cac-green scale-110" : "opacity-60 group-hover:opacity-80"}`} />
+                    <span className="truncate font-extrabold">{name}</span>
                   </div>
+                  {serviceType === name && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-cac-green/20 to-cac-blue/20 rounded-xl"></div>
+                  )}
                 </button>
               ))}
             </div>
@@ -836,20 +925,46 @@ const Registration = () => {
                   <button
                     key={name}
                     onClick={() => { setServiceType(name); navigate(`/register/${name.replace(/\s+/g, '-')}`); }}
-                    className={`w-full text-left px-5 py-4 rounded-xl font-bold text-sm transition-all ${
-                      serviceType === name ? 'bg-cac-blue text-white shadow-lg' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                    className={`group relative overflow-hidden w-full text-left px-5 py-4 rounded-xl font-bold text-sm transition-all duration-300 border-2 ${
+                      serviceType === name 
+                        ? 'bg-gradient-to-r from-cac-blue to-[#1e40af] text-white shadow-xl border-cac-blue scale-105' 
+                        : 'bg-gradient-to-r from-slate-50 to-gray-100 text-slate-600 hover:from-slate-100 hover:to-slate-200 border-slate-200 hover:border-slate-300 hover:shadow-md'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <Briefcase size={16} className={serviceType === name ? "text-cac-green" : "opacity-20"} />
-                      {name}
+                    <div className="flex items-center gap-3 relative z-10">
+                      <Briefcase size={16} className={`transition-all duration-300 ${serviceType === name ? "text-cac-green scale-110" : "opacity-60 group-hover:opacity-80"}`} />
+                      <span className="font-extrabold">{name}</span>
                     </div>
+                    {serviceType === name && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-cac-green/20 to-cac-blue/20 rounded-xl"></div>
+                    )}
                   </button>
                 ))}
               </div>
 
               {/* SIDEBAR SUPPORT & ACCREDITATION */}
               <div className="pt-6 border-t border-slate-100 space-y-4">
+                 {/* LEGITIMACY HUB - Enhanced Section */}
+                 <div className="p-4 bg-gradient-to-r from-cac-blue to-[#1e40af] rounded-2xl text-white">
+                    <div className="flex items-center gap-3 mb-3">
+                       <ShieldCheck size={24} className="text-cac-green shrink-0" />
+                       <div>
+                         <p className="text-[10px] font-black uppercase text-blue-200">Verify Our Legitimacy</p>
+                         <p className="text-sm font-bold">Are We Registered?</p>
+                       </div>
+                    </div>
+                    <p className="text-xs text-blue-100 mb-3">
+                       Click below to view our official CAC accreditation and business certificates.
+                    </p>
+                    <button 
+                      onClick={() => document.getElementById('legitimacy-modal')?.showModal()}
+                      className="w-full bg-cac-green hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all"
+                    >
+                       <FileText size={14} />
+                       View Certificates
+                    </button>
+                 </div>
+
                  <a href="https://wa.me/2349048349548" className="flex items-center gap-3 p-4 bg-[#25D366]/10 text-[#25D366] rounded-2xl hover:bg-[#25D366]/20 transition-all">
                     <div className="p-2 bg-[#25D366] text-white rounded-full"><MessageCircle size={16}/></div>
                     <div className="leading-none">
