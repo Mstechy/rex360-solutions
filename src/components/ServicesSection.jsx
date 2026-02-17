@@ -125,7 +125,7 @@ const ServicesSection = () => {
                 whileTap={{ scale: 0.98 }}
               >
                 <Link
-                  to={`/register/${linkName}`}
+                  to={`/services?service=${encodeURIComponent(service.name)}`}
                   className="group bg-white rounded-2xl p-6 lg:p-8 border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full overflow-hidden relative"
                 >
                   {/* Animated background gradient */}
@@ -212,13 +212,18 @@ const ServicesSection = () => {
                     >
                       <div>
                         <span className="text-sm text-gray-500">Starting from</span>
-                        <motion.div
-                          className="text-2xl font-bold text-blue-600"
-                          whileHover={{ scale: 1.05 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          ₦{parseInt(service.price || 0).toLocaleString()}
-                        </motion.div>
+                        <div className="flex items-center gap-2">
+                          {service.old_price && parseInt(service.old_price) > parseInt(service.price) && (
+                            <span className="text-lg line-through text-gray-400">₦{parseInt(service.old_price).toLocaleString()}</span>
+                          )}
+                          <motion.div
+                            className="text-2xl font-bold text-blue-600"
+                            whileHover={{ scale: 1.05 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            ₦{parseInt(service.price || 0).toLocaleString()}
+                          </motion.div>
+                        </div>
                       </div>
                       <motion.div
                         className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-600 transition-colors"

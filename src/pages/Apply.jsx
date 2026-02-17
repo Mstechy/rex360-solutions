@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
 import RegistrationWizard from './RegistrationWizard';
 
 // Service mapping - same as in Services.jsx
@@ -40,6 +41,15 @@ const Apply = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="mb-8">
+          <button
+            onClick={() => navigate('/services')}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white hover:bg-gray-50 text-gray-700 transition-all duration-300 shadow-sm border border-gray-200"
+          >
+            <ArrowLeft size={18} />
+            <span className="font-medium">Back to Services</span>
+          </button>
+        </div>
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}

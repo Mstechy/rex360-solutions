@@ -593,6 +593,21 @@ const RegistrationWizard = ({ preSelectedService = null }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <HeroSection />
+      
+      {/* Back Button */}
+      <div className="max-w-6xl mx-auto px-4 pt-4">
+        <motion.button
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+          onClick={() => navigate('/services')}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white hover:bg-gray-50 text-gray-700 transition-all duration-300 shadow-sm border border-gray-200"
+        >
+          <ArrowLeft size={18} />
+          <span className="font-medium">Back to Services</span>
+        </motion.button>
+      </div>
+      
       <div className="max-w-6xl mx-auto px-4 pb-12">
         <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
           <StepIndicator currentStep={currentStep} />

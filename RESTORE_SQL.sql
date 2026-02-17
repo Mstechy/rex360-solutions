@@ -14,14 +14,14 @@ CREATE TABLE IF NOT EXISTS services (
 );
 
 -- 2) INSERT SERVICES DATA
-INSERT INTO services (name, price, description, display_order) VALUES
-('Business Name', 3000, 'Register your business name with CAC', 1),
-('Company Name', 5000, 'Register your company with CAC', 2),
-('NGO Registration', 15000, 'Register a non-governmental organization', 3),
-('Export Licence', 25000, 'Get export licence from NEPC', 4),
-('Trademark', 20000, 'Register your trademark', 5),
-('Copyright', 25000, 'Register copyright', 6),
-('Annual Returns', 5000, 'File annual returns', 7)
+INSERT INTO services (name, price, old_price, description, display_order) VALUES
+('Business Name', 35000, 45000, 'Register your business name with CAC', 1),
+('Company Name', 80000, 100000, 'Register your company with CAC', 2),
+('NGO Registration', 140000, 160000, 'Register a non-governmental organization', 3),
+('Export Licence', 60000, 75000, 'Get export licence from NEPC', 4),
+('Trademark', 50000, 65000, 'Register your trademark', 5),
+('Copyright', 70000, 85000, 'Register copyright', 6),
+('Annual Returns', 60000, 70000, 'File annual returns', 7)
 ON CONFLICT DO NOTHING;
 
 -- 3) CREATE REGISTRATIONS TABLE
