@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Building2, Landmark, Users, Scale, FileCheck, ShieldCheck, History, Loader } from 'lucide-react';
+import { ArrowRight, Building2, Landmark, Users, ShieldCheck, FileCheck, Scale, History, Loader } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../SupabaseClient'; 
+import { motion } from 'framer-motion';
+import { supabase } from '../SupabaseClient';
 
 const iconMap = {
-  'Business Name': <Building2 />,
-  'Company Registration': <Landmark />,
-  'Company Name': <Landmark />, 
-  'NGO Registration': <Users />,
-  'Trademark': <ShieldCheck />,
-  'Export Licence': <FileCheck />,
-  'Copyright': <Scale />,
-  'Annual Returns': <History />
+  'Business Name': Building2,
+  'Company Registration': Landmark,
+  'Company Name': Landmark,
+  'NGO Registration': Users,
+  'Trademark': ShieldCheck,
+  'Export Licence': FileCheck,
+  'Copyright': Scale,
+  'Annual Returns': History,
 };
 
 const ServicesSection = () => {
@@ -41,80 +42,234 @@ const ServicesSection = () => {
 
   if (loading) {
     return (
-      <div className="py-32 text-center bg-slate-50">
-        <Loader className="animate-spin mx-auto text-cac-green mb-4" size={40}/>
-        <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">Loading Live Prices...</p>
+      <div className="py-32 text-center bg-white">
+        <Loader className="animate-spin mx-auto text-blue-600 mb-4" size={40} />
+        <p className="text-gray-500 font-semibold text-sm">Loading Services...</p>
       </div>
     );
   }
 
   return (
-    <section id="services-section" className="py-16 md:py-20 bg-slate-50 px-4 md:px-8 scroll-mt-20">
-      <div className="max-w-7xl mx-auto text-center mb-12 md:mb-16">
-        <span className="text-cac-green font-black uppercase tracking-[0.3em] text-xs">Our Expertise</span>
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-cac-blue mt-3 md:mt-4 mb-4 md:mb-6 tracking-tighter uppercase">CAC SERVICES WE OFFER</h2>
-        <div className="w-20 md:w-24 h-1.5 md:h-2 bg-cac-green mx-auto rounded-full"></div>
-      </div>
+    <section className="section-padding bg-white py-16 md:py-24">
+      <div className="max-w-7xl mx-auto px-4 md:px-8">
+        {/* Section Header */}
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <span className="inline-block px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold mb-4">
+            Our Services
+          </span>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+            Complete CAC{' '}
+            <span className="text-blue-600">Registration Services</span>
+          </h2>
+          <p className="text-lg text-gray-600">
+            We offer comprehensive business registration services to help you start
+            and grow your business legally in Nigeria.
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8 max-w-7xl mx-auto">
-        {services.map((service, index) => {
+        {/* Services Grid */}
+        <motion.div
+          className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-12"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: {
+                staggerChildren: 0.15,
+                delayChildren: 0.2
+              }
+            }
+          }}
+        >
+          {services.map((service, index) => {
+            const IconComponent = iconMap[service.name] || Building2;
+            const linkName = service.name === 'Company Registration' ? 'Company Name' : service.name;
 
-          // --- 🔧 THE FIX IS HERE ---
-          // We normalize the name so the Registration Page understands it.
-          // If DB says "Company Registration", we change link to "Company Name"
-          const linkName = service.name === 'Company Registration' ? 'Company Name' : service.name;
+            // Features based on service name
+            const features = {
+              'Business Name': ['CAC Certificate', 'BN Number', '1-3 Days Processing'],
+              'Company Registration': ['Certificate of Incorporation', 'RC Number', 'Memorandum & Articles'],
+              'Company Name': ['Certificate of Incorporation', 'RC Number', 'Memorandum & Articles'],
+              'NGO Registration': ['NGO Certificate', 'Trustees Registration', 'Full Compliance'],
+              'Trademark': ['Brand Protection', '10 Years Validity', 'Legal Certificate'],
+              'Export Licence': ['NEPC Registration', 'Export Documentation', 'International Trade'],
+              'Copyright': ['IP Protection', 'Legal Rights', 'Lifetime Validity'],
+              'Annual Returns': ['Legal Compliance', 'Annual Filing', '24-48 Hours'],
+            };
 
-          return (
-            <div
+            const serviceFeatures = features[service.name] || [];
+
+            return (
+              <motion.div
                 key={service.id}
-                className="service-card-pop group relative bg-white p-6 md:p-8 rounded-2xl md:rounded-3xl border-b-[8px] md:border-b-[10px] border-slate-200 shadow-lg md:shadow-xl hover:shadow-xl md:hover:shadow-2xl hover:-translate-y-2 md:hover:-translate-y-3 transition-all duration-500 ease-out flex flex-col h-full"
-                style={{ animationDelay: `${index * 0.1}s` }}
-            >
-                <div className="w-16 h-16 md:w-18 md:h-18 bg-slate-50 text-cac-green rounded-xl md:rounded-2xl flex items-center justify-center mb-4 md:mb-6 group-hover:bg-cac-blue group-hover:text-white group-hover:rotate-[10deg] transition-all duration-500">
-                {React.cloneElement(iconMap[service.name] || <Building2 />, { size: 28 })}
-                </div>
-
-                <h3 className="text-lg md:text-xl font-black text-slate-800 mb-3 md:mb-4 group-hover:text-cac-blue transition-colors leading-tight">
-                {service.name}
-                </h3>
-
-                <p className="text-slate-500 text-xs md:text-sm mb-4 md:mb-6 leading-relaxed font-medium flex-grow">
-                {service.name === 'Business Name' && "CAC business name registration under CAMA. Processing: 24-48 hours."}
-                {service.name.includes('Company') && "Limited liability company incorporation with CAC registration. Processing: 3-5 working days."}
-                {service.name.includes('NGO') && "NGO registration as incorporated trustee with CAC certification. Processing: 5-7 working days."}
-                {service.name === 'Trademark' && "Brand protection through CAC trademark registration. Processing: 2-4 weeks."}
-                {service.name === 'Export Licence' && "NEPC export licence for international trade. Processing: 3-5 working days."}
-                {service.name === 'Copyright' && "Intellectual property protection via CAC copyright registration. Processing: 2-4 weeks."}
-                {service.name === 'Annual Returns' && "Mandatory CAC annual filings to maintain active status. Processing: 24-48 hours."}
-                </p>
-
-                <div className="flex flex-col mb-4 md:mb-6">
-                {service.old_price && (
-                    <span className="text-slate-300 line-through text-xs md:text-sm italic font-bold">
-                    ₦{parseInt(service.old_price).toLocaleString()}
-                    </span>
-                )}
-                <span className="text-xl md:text-2xl font-black text-cac-green tracking-tighter">
-                    ₦{parseInt(service.price).toLocaleString()}
-                </span>
-                </div>
-
-                {/* We use the fixed 'linkName' here */}
-                <Link to={`/register/${linkName}`} className="block">
-                <button
-                  className="group relative w-full overflow-hidden bg-gradient-to-r from-slate-900 to-slate-800 hover:from-cac-blue hover:to-cac-green text-white px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-md sm:rounded-lg md:rounded-xl font-bold transition-all duration-500 shadow-md hover:shadow-lg active:scale-95 text-xs sm:text-xs md:text-sm border border-slate-700 hover:border-cac-green/50"
-                  aria-label={`Register for ${service.name} service`}
+                variants={{
+                  hidden: { opacity: 0, y: 50, scale: 0.9 },
+                  visible: {
+                    opacity: 1,
+                    y: 0,
+                    scale: 1,
+                    transition: {
+                      duration: 0.6,
+                      ease: [0.25, 0.1, 0.25, 1]
+                    }
+                  }
+                }}
+                whileHover={{
+                  y: -8,
+                  scale: 1.02,
+                  transition: { duration: 0.3, ease: "easeOut" }
+                }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Link
+                  to={`/register/${linkName}`}
+                  className="group bg-white rounded-2xl p-6 lg:p-8 border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full overflow-hidden relative"
                 >
-                  <div className="relative z-10 flex items-center justify-between">
-                    <span className="uppercase tracking-wider font-extrabold text-xs">Register Now</span>
-                    <ArrowRight className="group-hover:translate-x-0.5 group-hover:scale-105 transition-all duration-300" size={12} />
-                  </div>
-                  <div className="absolute inset-0 bg-gradient-to-r from-cac-green/20 to-cac-blue/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                </button>
+                  {/* Animated background gradient */}
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    initial={false}
+                    whileHover={{ scale: 1.1 }}
+                    transition={{ duration: 0.3 }}
+                  />
+
+                  {/* Icon with enhanced animation */}
+                  <motion.div
+                    className="w-14 h-14 rounded-xl bg-blue-100 flex items-center justify-center mb-6 relative z-10"
+                    whileHover={{
+                      scale: 1.1,
+                      backgroundColor: "#2563eb",
+                      transition: { duration: 0.2 }
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <motion.div
+                      whileHover={{ rotate: 360 }}
+                      transition={{ duration: 0.6, ease: "easeInOut" }}
+                    >
+                      <IconComponent className="w-7 h-7 text-blue-600 group-hover:text-white transition-colors" />
+                    </motion.div>
+                  </motion.div>
+
+                  {/* Content with staggered animation */}
+                  <motion.div className="relative z-10 flex flex-col flex-grow">
+                    <motion.h3
+                      className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors"
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1, duration: 0.5 }}
+                      viewport={{ once: true }}
+                    >
+                      {service.name}
+                    </motion.h3>
+                    <motion.p
+                      className="text-gray-600 mb-4 line-clamp-2 text-sm"
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2, duration: 0.5 }}
+                      viewport={{ once: true }}
+                    >
+                      {service.description || 'Professional CAC registration service with expert guidance.'}
+                    </motion.p>
+
+                    {/* Features with staggered animation */}
+                    <motion.div
+                      className="flex flex-wrap gap-2 mb-6"
+                      initial={{ opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      transition={{ delay: 0.3, duration: 0.5 }}
+                      viewport={{ once: true }}
+                    >
+                      {serviceFeatures.map((feature, i) => (
+                        <motion.span
+                          key={i}
+                          className="text-xs px-3 py-1 bg-gray-100 rounded-full text-gray-700"
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          whileInView={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.4 + (i * 0.1), duration: 0.3 }}
+                          whileHover={{
+                            scale: 1.05,
+                            backgroundColor: "#dbeafe",
+                            transition: { duration: 0.2 }
+                          }}
+                          viewport={{ once: true }}
+                        >
+                          {feature}
+                        </motion.span>
+                      ))}
+                    </motion.div>
+
+                    {/* Price & CTA with enhanced animation */}
+                    <motion.div
+                      className="flex items-center justify-between pt-4 border-t border-gray-200 mt-auto relative z-10"
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5, duration: 0.5 }}
+                      viewport={{ once: true }}
+                    >
+                      <div>
+                        <span className="text-sm text-gray-500">Starting from</span>
+                        <motion.div
+                          className="text-2xl font-bold text-blue-600"
+                          whileHover={{ scale: 1.05 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          ₦{parseInt(service.price || 0).toLocaleString()}
+                        </motion.div>
+                      </div>
+                      <motion.div
+                        className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-600 transition-colors"
+                        whileHover={{
+                          scale: 1.1,
+                          rotate: 90,
+                          transition: { duration: 0.3 }
+                        }}
+                        whileTap={{ scale: 0.9 }}
+                      >
+                        <ArrowRight className="w-5 h-5 text-blue-600 group-hover:text-white transition-colors" />
+                      </motion.div>
+                    </motion.div>
+                  </motion.div>
                 </Link>
-            </div>
-          );
-        })}
+              </motion.div>
+            );
+          })}
+        </motion.div>
+
+        {/* CTA */}
+        <motion.div
+          className="text-center"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.6 }}
+          viewport={{ once: true }}
+        >
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Link
+              to="/services"
+              className="inline-flex items-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl"
+            >
+              <motion.span
+                whileHover={{ x: -2 }}
+                transition={{ duration: 0.2 }}
+              >
+                View All Services
+              </motion.span>
+              <motion.div
+                whileHover={{ x: 2 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ArrowRight className="w-5 h-5" />
+              </motion.div>
+            </Link>
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );

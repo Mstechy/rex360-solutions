@@ -112,7 +112,7 @@ const HeroSlider = () => {
               <p className="text-white/90 text-sm sm:text-base md:text-lg font-medium max-w-xs sm:max-w-sm md:max-w-xl mx-auto mb-6 sm:mb-8 leading-relaxed px-4">
                 Your Digital Partner for Success
               </p>
-              <Link to="/register">
+              <Link to="/services">
                 <button className="group relative overflow-hidden bg-gradient-to-r from-[#008751] to-cac-green hover:from-white hover:to-gray-50 hover:text-[#008751] text-white px-4 sm:px-6 md:px-8 lg:px-10 py-2.5 sm:py-3 md:py-4 lg:py-5 rounded-xl font-bold uppercase text-xs sm:text-sm md:text-base lg:text-lg transition-all duration-500 shadow-xl hover:shadow-2xl active:scale-95 border-2 border-transparent hover:border-[#008751] flex items-center gap-2 sm:gap-3">
                   <span className="relative z-10 tracking-wider">Start Now</span>
                   <ArrowRight size={16} className="group-hover:translate-x-1 group-hover:scale-110 transition-all duration-300 relative z-10" />
@@ -171,7 +171,7 @@ const HeroSlider = () => {
               </p>
 
               {/* 6. THE BUTTON: High-contrast call to action */}
-              <Link to="/register">
+              <Link to="/services">
                 <button className="group relative overflow-hidden bg-gradient-to-r from-[#008751] to-cac-green hover:from-white hover:to-gray-50 hover:text-[#008751] text-white px-4 sm:px-6 md:px-8 lg:px-10 py-2.5 sm:py-3 md:py-4 lg:py-5 rounded-xl font-bold uppercase text-xs sm:text-sm md:text-base lg:text-lg transition-all duration-500 shadow-xl hover:shadow-2xl active:scale-95 border-2 border-transparent hover:border-[#008751] flex items-center gap-2 sm:gap-3 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-slate-800">
                   <span className="relative z-10 tracking-wider">Start Now</span>
                   <ArrowRight size={16} className="group-hover:translate-x-1 group-hover:scale-110 transition-all duration-300 relative z-10" />

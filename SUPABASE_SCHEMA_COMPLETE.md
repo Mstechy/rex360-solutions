@@ -9,7 +9,7 @@ The Supabase database is properly configured to track registration payments and 
 
 **Project Name:** REX360 Solutions
 **Project URL:** https://oohabvgbrzrewwrekkfy.supabase.co
-**API Key (Public):** pk_test_1dc8f242ed09075faee33e86dff64ce401918129
+**API Key (Public):** pk_live_08ddf326f45872fd52bbaafda8e14863b37bd00b
 
 ---
 

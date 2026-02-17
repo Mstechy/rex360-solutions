@@ -55,7 +55,7 @@ const Navbar = () => {
 
           {/* DESKTOP CTA */}
           <div className="hidden md:block">
-            <Link to="/register">
+            <Link to="/services">
               <button className="group relative overflow-hidden bg-gradient-to-r from-cac-green to-emerald-500 hover:from-emerald-400 hover:to-green-500 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-full font-extrabold text-sm transition-all duration-500 transform hover:scale-105 shadow-xl hover:shadow-2xl border-2 border-transparent hover:border-white/30">
                 <span className="relative z-10 tracking-wider">GET STARTED</span>
                 <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full"></div>
@@ -103,7 +103,7 @@ const Navbar = () => {
             )
           ))}
           {/* FIX: Wrapped Mobile Button in Link */}
-          <Link to="/register" onClick={() => setIsOpen(false)}>
+          <Link to="/services" onClick={() => setIsOpen(false)}>
             <button className="w-full bg-cac-green text-white py-4 rounded-xl font-black mt-4 shadow-lg active:scale-95 transition-transform">
               GET STARTED
             </button>

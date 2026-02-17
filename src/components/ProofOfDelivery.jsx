@@ -238,7 +238,7 @@ const ProofOfDelivery = () => {
               Want to join our happy clients?
             </p>
             <Link
-              to="/register"
+              to="/services"
               className="group inline-flex items-center gap-2 sm:gap-3 bg-gradient-to-r from-cac-green to-emerald-500 hover:from-emerald-400 hover:to-green-500 text-white font-bold py-2 sm:py-3 md:py-4 px-4 sm:px-5 md:px-6 lg:px-8 rounded-xl transition-all duration-500 transform hover:scale-105 hover:shadow-xl active:scale-95 border-2 border-transparent hover:border-white/30"
             >
               <span className="text-xs sm:text-sm md:text-base font-extrabold tracking-wide">Get Started Today</span>
