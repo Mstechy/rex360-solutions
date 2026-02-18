@@ -1,316 +1,294 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { X, ZoomIn, ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
-import { useIsMobile, scrollAnimationVariants } from '../hooks/useResponsiveMotion';
+import { X, ZoomIn, ChevronLeft, ChevronRight, MessageCircle, ShieldCheck } from 'lucide-react';
+import { useIsMobile } from '../hooks/useResponsiveMotion';
+
+// Import your images
 import testmo1 from '/testmo1.png';
 import testmo2 from '/testmo2.png';
 import testmo3 from '/testmo3.png';
 import testmo4 from '/testmo4.png';
 import testmo5 from '/testmo5.png';
 
-// Placeholder data - user can replace with their actual WhatsApp chat screenshots
 const deliveryProofs = [
-  {
-    id: 1,
-    image: testmo1
-  },
-  {
-    id: 2,
-    image: testmo2
-  },
-  {
-    id: 3,
-    image: testmo3
-  },
-  {
-    id: 4,
-    image: testmo4
-  },
-  {
-    id: 5,
-    image: testmo5
-  },
-  {
-    id: 6,
-    image: testmo1
-  }
+  { id: 1, image: testmo1 },
+  { id: 2, image: testmo2 },
+  { id: 3, image: testmo3 },
+  { id: 4, image: testmo4 },
+  { id: 5, image: testmo5 },
+  { id: 6, image: testmo1 }
 ];
 
 const ProofOfDelivery = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(1);
+  const [autoSlideEnabled, setAutoSlideEnabled] = useState(true);
+  
+  // Touch state
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
-  const [autoSlideEnabled, setAutoSlideEnabled] = useState(true);
-  const [currentSlide, setCurrentSlide] = useState(0);
+  
   const isMobile = useIsMobile();
 
-  const minSwipeDistance = 50;
+  // 1. DYNAMIC SIZING: Determine how many items to show
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) setItemsPerPage(3);      // Desktop: 3 items (Medium size)
+      else if (window.innerWidth >= 768) setItemsPerPage(2);  // iPad: 2 items
+      else setItemsPerPage(1);                                // Mobile: 1 item
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  const openLightbox = (index) => {
-    setCurrentIndex(index);
-    setSelectedImage(deliveryProofs[index]);
+  // 2. AUTO-SLIDE ENGINE
+  useEffect(() => {
+    if (!autoSlideEnabled) return;
+    const interval = setInterval(() => {
+      handleNext();
+    }, 3000); // 3 seconds per slide
+    return () => clearInterval(interval);
+  }, [autoSlideEnabled, currentIndex, itemsPerPage]);
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => {
+      const maxIndex = deliveryProofs.length - itemsPerPage;
+      return prev >= maxIndex ? 0 : prev + 1;
+    });
   };
 
-  const closeLightbox = () => {
-    setSelectedImage(null);
+  const handlePrev = () => {
+    setCurrentIndex((prev) => {
+      const maxIndex = deliveryProofs.length - itemsPerPage;
+      return prev === 0 ? maxIndex : prev - 1;
+    });
   };
 
-  const goToNext = (e) => {
-    e?.stopPropagation();
-    const nextIndex = (currentIndex + 1) % deliveryProofs.length;
-    setCurrentIndex(nextIndex);
-    setSelectedImage(deliveryProofs[nextIndex]);
+  // 3. TOUCH HANDLERS
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+    setAutoSlideEnabled(false);
+  };
+  const onTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+  const onTouchEnd = () => {
+    setAutoSlideEnabled(true);
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    if (distance > 50) handleNext();
+    if (distance < -50) handlePrev();
   };
 
-  const goToPrev = (e) => {
-    e?.stopPropagation();
-    const prevIndex = (currentIndex - 1 + deliveryProofs.length) % deliveryProofs.length;
-    setCurrentIndex(prevIndex);
-    setSelectedImage(deliveryProofs[prevIndex]);
-  };
-
-  // Keyboard navigation
+  // Keyboard Navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (!selectedImage) return;
-      if (e.key === 'ArrowLeft') goToPrev();
-      if (e.key === 'ArrowRight') goToNext();
-      if (e.key === 'Escape') closeLightbox();
+      if (selectedImage) {
+        if (e.key === 'Escape') setSelectedImage(null);
+      } else {
+        if (e.key === 'ArrowLeft') handlePrev();
+        if (e.key === 'ArrowRight') handleNext();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedImage, currentIndex]);
 
-  // Touch handlers for swipe
-  const onTouchStart = (e) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (e) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-    if (isLeftSwipe) goToNext();
-    if (isRightSwipe) goToPrev();
-  };
-
-  // Prevent body scroll when lightbox is open
-  useEffect(() => {
-    if (selectedImage) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [selectedImage]);
-
-  // Auto-sliding functionality
-  useEffect(() => {
-    if (!autoSlideEnabled || deliveryProofs.length <= 1) return;
-
-    const interval = setInterval(() => {
-      setCurrentSlide((prevSlide) => (prevSlide + 1) % deliveryProofs.length);
-    }, 3000); // Slide every 3 seconds
-
-    return () => clearInterval(interval);
-  }, [autoSlideEnabled, deliveryProofs.length]);
-
   return (
-    <div className="py-8 md:py-16 bg-gradient-to-b from-white to-gray-50">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-        {/* Section Header */}
+    <div className="py-16 md:py-24 bg-gray-50 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* PREMIUM HEADER */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-8 md:mb-12"
+          className="text-center mb-12 md:mb-16"
         >
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-cac-blue mb-3 md:mb-4 uppercase tracking-tight px-2">
-            Real Results, Real Clients.
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-bold uppercase tracking-wider mb-4">
+            <ShieldCheck size={14} /> Verified Success
+          </div>
+          <h2 className="text-3xl md:text-5xl font-black text-gray-900 mb-4 tracking-tight">
+            Real Results, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-blue-500">Real Clients</span>
           </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base md:text-lg px-4 md:px-0">
-            See what our clients are saying after receiving their documents. 
-            These are real WhatsApp messages from satisfied customers.
+          <p className="text-gray-500 max-w-2xl mx-auto text-lg">
+            Don't just take our word for it. See the actual delivery confirmations from our satisfied partners.
           </p>
-          <div className="w-16 md:w-24 h-1 bg-cac-green mx-auto mt-4 md:mt-6"></div>
         </motion.div>
 
-        {/* Auto-Sliding Container - Shows one testimonial at a time */}
-        <div className="relative overflow-hidden">
-          <motion.div
-            className="flex"
-            animate={{
-              x: `-${currentSlide * 100}%`
-            }}
-            transition={{
-              duration: 0.8,
-              ease: [0.22, 1, 0.36, 1]
-            }}
-            onHoverStart={() => setAutoSlideEnabled(false)}
-            onHoverEnd={() => setAutoSlideEnabled(true)}
-          >
-            {deliveryProofs.map((proof, index) => (
-              <motion.div
-                key={proof.id}
-                className="w-full flex-shrink-0 px-2"
-                initial={scrollAnimationVariants.fadeUpResponsive(isMobile)}
-                whileInView={scrollAnimationVariants.fadeUp.visible}
-                viewport={{ once: true, margin: isMobile ? "-50px" : "-100px" }}
-                transition={{
-                  delay: index * (isMobile ? 0.05 : 0.1),
-                  duration: isMobile ? 0.4 : 0.6,
-                  ease: [0.22, 1, 0.36, 1]
-                }}
-              >
+        {/* CAROUSEL CONTAINER */}
+        <div 
+          className="relative group px-2"
+          onMouseEnter={() => setAutoSlideEnabled(false)}
+          onMouseLeave={() => setAutoSlideEnabled(true)}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
+          <div className="overflow-hidden py-8 -my-8"> {/* Negative margin to allow shadows to breathe */}
+            <motion.div
+              className="flex"
+              animate={{ x: `-${currentIndex * (100 / itemsPerPage)}%` }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            >
+              {deliveryProofs.map((proof) => (
                 <motion.div
-                  onClick={() => openLightbox(index)}
-                  className="bg-white rounded-xl md:rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group border-2 border-transparent hover:border-cac-green transform hover:-translate-y-1 max-w-md mx-auto"
-                  whileHover={{
-                    scale: 1.02,
-                    transition: { duration: 0.2 }
-                  }}
-                  whileTap={{ scale: 0.98 }}
+                  key={proof.id}
+                  className="flex-shrink-0 px-4 transition-all duration-500"
+                  style={{ width: `${100 / itemsPerPage}%` }}
                 >
-                  {/* WhatsApp Chat Image */}
-                  <div className="relative overflow-hidden">
+                  {/* --- CARD START: RESIZED & RE-STYLED --- */}
+                  <div
+                    onClick={() => { setSelectedImage(proof); setAutoSlideEnabled(false); }}
+                    className="
+                      relative cursor-pointer mx-auto
+                      bg-white rounded-[2rem] shadow-xl hover:shadow-2xl 
+                      hover:-translate-y-2 transition-all duration-300 
+                      border-[6px] border-white ring-1 ring-gray-200
+                      overflow-hidden
+                      max-w-[280px] md:max-w-[320px] /* PHONE WIDTH LIMIT */
+                      aspect-[9/16] /* PHONE ASPECT RATIO */
+                    "
+                  >
+                    {/* Fake Phone Header */}
+                    <div className="bg-gray-100 h-6 w-full absolute top-0 z-10 flex justify-center items-center">
+                       <div className="w-16 h-4 bg-black rounded-b-xl"></div>
+                    </div>
+
                     <img
                       src={proof.image}
-                      alt="WhatsApp chat"
-                      className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-500"
-                      loading="lazy"
+                      alt="Delivery Proof"
+                      className="w-full h-full object-cover"
                     />
-                    {/* Overlay with zoom icon */}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center">
-                      <div className="opacity-0 group-hover:opacity-100 transform scale-50 group-hover:scale-100 transition-all duration-300">
-                        <div className="bg-white/90 p-2 md:p-3 rounded-full">
-                          <ZoomIn className="text-cac-blue w-5 h-5 md:w-6 md:h-6" />
-                        </div>
-                      </div>
+
+                    {/* Premium Hover Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-blue-900/80 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-8">
+                       <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-4 py-2 rounded-full flex items-center gap-2 transform translate-y-4 hover:translate-y-0 transition-transform duration-300">
+                          <ZoomIn size={18} />
+                          <span className="font-semibold text-sm">View Proof</span>
+                       </div>
                     </div>
-                    {/* WhatsApp indicator */}
-                    <div className="absolute top-2 md:top-3 right-2 md:right-3 bg-[#25D366] text-white px-2 md:px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                      <MessageCircle className="w-3 h-3 md:w-4 md:h-4" />
-                      <span className="hidden sm:inline">WhatsApp</span>
-                      <span className="sm:hidden">WA</span>
+
+                    {/* WhatsApp Badge */}
+                    <div className="absolute top-8 right-4 bg-[#25D366] text-white p-1.5 rounded-full shadow-lg z-20">
+                      <MessageCircle size={16} fill="white" />
                     </div>
                   </div>
+                  {/* --- CARD END --- */}
                 </motion.div>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          {/* Slide Indicators */}
-          <div className="flex justify-center mt-6 space-x-2">
-            {deliveryProofs.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentSlide(index)}
-                className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                  index === currentSlide
-                    ? 'bg-cac-green scale-125'
-                    : 'bg-gray-300 hover:bg-gray-400'
-                }`}
-                aria-label={`Go to slide ${index + 1}`}
-              />
-            ))}
+              ))}
+            </motion.div>
           </div>
+
+          {/* Desktop Navigation Arrows */}
+          <button 
+            onClick={handlePrev}
+            className="hidden md:flex absolute -left-4 lg:-left-12 top-1/2 -translate-y-1/2 bg-white text-gray-800 p-3 rounded-full shadow-xl hover:bg-blue-600 hover:text-white transition-all z-20 border border-gray-100 group"
+          >
+            <ChevronLeft size={24} className="group-hover:-translate-x-0.5 transition-transform"/>
+          </button>
+          <button 
+            onClick={handleNext}
+            className="hidden md:flex absolute -right-4 lg:-right-12 top-1/2 -translate-y-1/2 bg-white text-gray-800 p-3 rounded-full shadow-xl hover:bg-blue-600 hover:text-white transition-all z-20 border border-gray-100 group"
+          >
+            <ChevronRight size={24} className="group-hover:translate-x-0.5 transition-transform"/>
+          </button>
         </div>
 
-        {/* CTA Section - Fully Responsive */}
+        {/* PAGINATION DOTS */}
+        <div className="flex justify-center mt-10 gap-3">
+          {Array.from({ length: deliveryProofs.length - itemsPerPage + 1 }).map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentIndex(idx)}
+              className={`rounded-full transition-all duration-500 ${
+                idx === currentIndex ? 'w-8 h-2 bg-blue-600' : 'w-2 h-2 bg-gray-300 hover:bg-gray-400'
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* PREMIUM CTA BUTTON */}
         <motion.div 
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="text-center mt-8 md:mt-12 px-4"
+          className="text-center mt-16"
         >
-          <div className="inline-block bg-gradient-to-br from-cac-blue via-[#1e40af] to-[#3730a3] text-white px-4 sm:px-6 md:px-8 lg:px-10 py-4 sm:py-5 md:py-6 lg:py-8 rounded-2xl shadow-2xl hover:shadow-3xl border border-white/10 hover:border-white/20 transition-all duration-500">
-            <p className="text-xs sm:text-sm md:text-base lg:text-lg font-medium mb-3 sm:mb-4 md:mb-5 text-blue-100">
-              Want to join our happy clients?
-            </p>
-            <Link
-              to="/services"
-              className="group inline-flex items-center gap-2 sm:gap-3 bg-gradient-to-r from-cac-green to-emerald-500 hover:from-emerald-400 hover:to-green-500 text-white font-bold py-2 sm:py-3 md:py-4 px-4 sm:px-5 md:px-6 lg:px-8 rounded-xl transition-all duration-500 transform hover:scale-105 hover:shadow-xl active:scale-95 border-2 border-transparent hover:border-white/30"
-            >
-              <span className="text-xs sm:text-sm md:text-base font-extrabold tracking-wide">Get Started Today</span>
-              <span className="text-base sm:text-lg md:text-xl group-hover:translate-x-1 transition-transform duration-300">→</span>
-            </Link>
+          <div className="inline-block p-1 rounded-2xl bg-gradient-to-r from-blue-100 to-white shadow-lg">
+             <div className="bg-white rounded-xl px-6 py-8 md:px-12">
+                <p className="text-gray-600 font-medium mb-6">Ready to get your own success story?</p>
+                <Link
+                  to="/services"
+                  className="
+                    group relative inline-flex items-center gap-3 
+                    bg-gradient-to-r from-blue-700 to-blue-600 
+                    hover:from-blue-600 hover:to-blue-500 
+                    text-white font-bold py-4 px-10 rounded-xl 
+                    shadow-lg hover:shadow-blue-500/30 
+                    transition-all duration-300 transform hover:-translate-y-1
+                  "
+                >
+                  <span className="relative z-10 text-lg">Start Your Registration</span>
+                  <ChevronRight className="relative z-10 transition-transform duration-300 group-hover:translate-x-1" size={20} />
+                  
+                  {/* Button Shine Effect */}
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:animate-shine" />
+                </Link>
+             </div>
           </div>
         </motion.div>
       </div>
 
-      {/* Lightbox Modal - Fully Responsive */}
+      {/* --- LIGHTBOX (MODAL) --- */}
       <AnimatePresence>
         {selectedImage && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-2 md:p-4"
-            onClick={closeLightbox}
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
+            className="fixed inset-0 z-50 bg-slate-900/95 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => { setSelectedImage(null); setAutoSlideEnabled(true); }}
           >
-            {/* Close Button */}
-            <button 
-              onClick={closeLightbox}
-              className="absolute top-2 right-2 md:top-4 md:right-4 text-white hover:text-cac-green transition-colors z-10 p-2"
-            >
-              <X size={24} className="md:w-8 md:h-8" />
+            {/* Modal Close */}
+            <button className="absolute top-6 right-6 text-white/70 hover:text-white transition-colors bg-white/10 p-2 rounded-full backdrop-blur-md">
+              <X size={24} />
             </button>
 
-            {/* Navigation Arrows - Hidden on very small screens, shown on mobile and up */}
-            <button 
-              onClick={goToPrev}
-              className="absolute left-1 sm:left-2 md:left-4 lg:left-8 text-white hover:text-cac-green transition-colors p-1 md:p-2"
-              aria-label="Previous image"
-            >
-              <ChevronLeft size={28} className="sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14" />
-            </button>
-            <button 
-              onClick={goToNext}
-              className="absolute right-1 sm:right-2 md:right-4 lg:right-8 text-white hover:text-cac-green transition-colors p-1 md:p-2"
-              aria-label="Next image"
-            >
-              <ChevronRight size={28} className="sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14" />
-            </button>
-
-            {/* Image Display */}
+            {/* Modal Image Wrapper */}
             <motion.div
-              initial={scrollAnimationVariants.lightboxImage.hidden}
-              animate={scrollAnimationVariants.lightboxImage.visible}
-              exit={scrollAnimationVariants.lightboxImage.exit}
-              className="max-w-[95%] sm:max-w-4xl w-full mx-8 md:mx-16"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
               onClick={(e) => e.stopPropagation()}
+              className="
+                relative w-full max-w-[400px] max-h-[85vh] 
+                bg-white rounded-3xl overflow-hidden shadow-2xl 
+                flex flex-col border border-white/20
+              "
             >
-              <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden shadow-2xl">
+              {/* WhatsApp-style Header */}
+              <div className="bg-[#075E54] px-4 py-3 flex items-center gap-3 text-white shrink-0">
+                 <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                    <MessageCircle size={20} />
+                 </div>
+                 <div>
+                    <h3 className="font-bold text-sm">Official Delivery</h3>
+                    <p className="text-xs text-green-100 opacity-80">Verified Chat</p>
+                 </div>
+              </div>
+
+              {/* Scrollable Image Area */}
+              <div className="flex-1 overflow-y-auto bg-[#ECE5DD] custom-scrollbar p-0">
                 <img 
                   src={selectedImage.image} 
-                  alt="WhatsApp chat"
-                  className="w-full h-auto max-h-[60vh] sm:max-h-[70vh] md:max-h-[80vh] object-contain"
+                  alt="Full Chat" 
+                  className="w-full h-auto block"
                 />
               </div>
             </motion.div>
-
-            {/* Image Counter */}
-            <div className="absolute bottom-3 md:bottom-4 left-1/2 transform -translate-x-1/2 text-white text-xs sm:text-sm bg-black/50 px-3 py-1 rounded-full">
-              {currentIndex + 1} / {deliveryProofs.length}
-            </div>
-
-            {/* Mobile swipe hint */}
-            <div className="absolute bottom-12 md:bottom-16 left-1/2 transform -translate-x-1/2 text-white/50 text-xs hidden sm:block">
-              ← Swipe to navigate →
-            </div>
           </motion.div>
         )}
       </AnimatePresence>
