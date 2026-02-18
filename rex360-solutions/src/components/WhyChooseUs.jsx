@@ -34,55 +34,6 @@ const reasons = [
   },
 ];
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-      delayChildren: 0.2
-    }
-  }
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 50, scale: 0.9 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      duration: 0.6,
-      ease: [0.25, 0.1, 0.25, 1]
-    }
-  }
-};
-
-const headerVariants = {
-  hidden: { opacity: 0, x: -50 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: {
-      duration: 0.8,
-      ease: "easeOut"
-    }
-  }
-};
-
-const statsVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.6,
-      delay: 0.4,
-      ease: "easeOut"
-    }
-  }
-};
-
 export function WhyChooseUs() {
   return (
     <section className="py-16 md:py-24 bg-gray-50">
@@ -90,10 +41,10 @@ export function WhyChooseUs() {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Content */}
           <motion.div
-            initial="hidden"
-            whileInView="visible"
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-100px" }}
-            variants={headerVariants}
+            transition={{ duration: 0.8, ease: "easeOut" }}
           >
             <span className="inline-block px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold mb-4">
               Why Choose Us
@@ -111,7 +62,10 @@ export function WhyChooseUs() {
             {/* Stats */}
             <motion.div 
               className="grid grid-cols-3 gap-6"
-              variants={statsVariants}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
             >
               {[
                 { number: "5000+", label: "Clients Served" },
@@ -134,20 +88,21 @@ export function WhyChooseUs() {
           </motion.div>
 
           {/* Reasons Grid */}
-          <motion.div
-            className="grid sm:grid-cols-2 gap-4"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={containerVariants}
-          >
+          <div className="grid sm:grid-cols-2 gap-4">
             {reasons.map((reason, index) => {
               const ReasonIcon = reason.icon;
               
               return (
                 <motion.div
                   key={index}
-                  variants={itemVariants}
+                  initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                  viewport={{ once: true, margin: "-100px" }}
+                  transition={{ 
+                    duration: 0.6, 
+                    delay: index * 0.1,
+                    ease: [0.25, 0.1, 0.25, 1] 
+                  }}
                   whileHover={{
                     y: -8,
                     scale: 1.02,
@@ -172,7 +127,7 @@ export function WhyChooseUs() {
                 </motion.div>
               );
             })}
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>
