@@ -63,7 +63,7 @@ function AppContent() {
     { id: 'legitimacy-hub', name: 'Legitimacy' }
   ];
 
-  const { currentSection, isAutoScrolling, scrollToSection, toggleAutoScroll } = useAutoScrollSections(sections, true, 10000);
+const { currentSection, isAutoScrolling, scrollToSection, toggleAutoScroll } = useAutoScrollSections(sections, false, 10000);
 
   // Responsive animation settings
   const getAnimationSettings = (mobileDuration = 0.4, desktopDuration = 0.6, mobileDelay = 0.05, desktopDelay = 0.1) => ({
