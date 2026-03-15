@@ -40,46 +40,8 @@ const Registration = () => {
   const [prices, setPrices] = useState({});
   const [loading, setLoading] = useState(true);
   
-  const [files, setFiles] = useState({ 
-    "ID Card": [], 
-    "Signature": [], 
-    "Passport": [], 
-    "Logo": [],
-    // NGO Officer Documents
-    "Chairman Signature": [],
-    "Chairman Passport": [],
-    "Chairman NIN Slip": [],
-    "Secretary Signature": [],
-    "Secretary Passport": [],
-    "Secretary NIN Slip": [],
-    "Trustee1 Signature": [],
-    "Trustee1 Passport": [],
-    "Trustee1 NIN Slip": [],
-    "Trustee2 NIN Slip": [],
-    // Copyright Documents
-    "Copyright Work Copy": [],
-    "Copyright Owner ID": []
-  });
-  
-  const [previews, setPreviews] = useState({
-    "ID Card": [], 
-    "Signature": [], 
-    "Passport": [], 
-    "Logo": [],
-    // NGO Officer Documents
-    "Chairman Signature": [],
-    "Chairman Passport": [],
-    "Chairman NIN Slip": [],
-    "Secretary Signature": [],
-    "Secretary Passport": [],
-    "Secretary NIN Slip": [],
-    "Trustee1 Signature": [],
-    "Trustee1 Passport": [],
-    "Trustee1 NIN Slip": [],
-    "Trustee2 Signature": [],
-    "Trustee2 Passport": [],
-    "Trustee2 NIN Slip": []
-  });
+  const [files, setFiles] = useState({ "ID Card": [], "Signature": [], "Passport": [] });
+  const [previews, setPreviews] = useState({ "ID Card": [], "Signature": [], "Passport": [] });
   
   const [category, setCategory] = useState('');
   const [nature, setNature] = useState('');
@@ -328,26 +290,13 @@ const Registration = () => {
         
         console.log('✅ All documents uploaded:', documentUrls);
 
-        // Save registration to database - Handle both bn-prefixed and regular field IDs
-        // For Business Name, fields have bn- prefix; for others, they use regular IDs
-        const getFieldValue = (fieldName) => {
-          // Try bn-prefixed first (for Business Name)
-          const bnElement = document.getElementById(`bn-${fieldName}`);
-          if (bnElement && bnElement.value) return bnElement.value;
-          
-          // Try regular field ID
-          const regularElement = document.getElementById(fieldName);
-          if (regularElement && regularElement.value) return regularElement.value;
-          
-          return '';
-        };
-        
+        // Save registration to database
         const registrationData = {
             service_type: serviceType,
-            surname: getFieldValue('surname'),
-            firstname: getFieldValue('firstname'),
-            phone: getFieldValue('phone'),
-            email: getFieldValue('email'),
+            surname: getFormValue('surname'),
+            firstname: getFormValue('firstname'),
+            phone: getFormValue('phone'),
+            email: getFormValue('email'),
             amount: currentPrice || 0,  // USE CURRENT PRICE - FIX FOR DATA SAVING
             paystack_ref: reference,
             payment_status: 'paid',  // Set to paid after successful payment
@@ -410,8 +359,8 @@ const Registration = () => {
           saveToDatabase(paystackRef)
             .then(() => {
               // Clear form silently
-              setFiles({ "ID Card": [], "Signature": [], "Passport": [], "Logo": [] });
-              setPreviews({ "ID Card": [], "Signature": [], "Passport": [], "Logo": [] });
+              setFiles({ "ID Card": [], "Signature": [], "Passport": [] });
+              setPreviews({ "ID Card": [], "Signature": [], "Passport": [] });
               setCategory('');
               setNature('');
               
@@ -564,142 +513,21 @@ const Registration = () => {
     switch(serviceType) {
       case 'Business Name':
         return (
-          <div className="space-y-8">
-            {/* PERSONAL DETAILS */}
-            <div className="space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-200">
-               <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest border-l-4 border-cac-green pl-3">1. PERSONAL DETAILS</h3>
-               <div className="grid md:grid-cols-3 gap-4">
-                  <div>
-                    <label htmlFor="bn-surname" className="text-[9px] font-black text-slate-400 uppercase block mb-1">SURNAME *</label>
-                    <input id="bn-surname" autoComplete="family-name" placeholder="SURNAME" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="bn-firstname" className="text-[9px] font-black text-slate-400 uppercase block mb-1">FIRST NAME *</label>
-                    <input id="bn-firstname" autoComplete="given-name" placeholder="FIRST NAME" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="bn-othername" className="text-[9px] font-black text-slate-400 uppercase block mb-1">OTHER NAME</label>
-                    <input id="bn-othername" autoComplete="additional-name" placeholder="OTHER NAME" className="p-4 rounded-xl border-none font-bold w-full uppercase" />
-                  </div>
-                  <div>
-                    <label htmlFor="bn-dob" className="text-[9px] font-black text-slate-400 uppercase block mb-1">DATE OF BIRTH *</label>
-                    <input id="bn-dob" type="date" autoComplete="bday" className="p-4 rounded-xl border-none font-bold w-full" required />
-                  </div>
-                  <div>
-                    <label htmlFor="bn-gender" className="text-[9px] font-black text-slate-400 uppercase block mb-1">GENDER *</label>
-                    <select id="bn-gender" autoComplete="sex" className="p-4 rounded-xl border-none font-bold w-full uppercase" required>
-                      <option value="">SELECT GENDER</option>
-                      <option value="MALE">MALE</option>
-                      <option value="FEMALE">FEMALE</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="bn-phone" className="text-[9px] font-black text-slate-400 uppercase block mb-1">PHONE NUMBER *</label>
-                    <input id="bn-phone" autoComplete="tel" placeholder="PHONE NUMBER" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="bn-email" className="text-[9px] font-black text-slate-400 uppercase block mb-1">EMAIL *</label>
-                    <input id="bn-email" type="email" autoComplete="email" placeholder="EMAIL" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="bn-nin" className="text-[9px] font-black text-slate-400 uppercase block mb-1">NIN *</label>
-                    <input id="bn-nin" autoComplete="off" placeholder="NIN (11 DIGITS)" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-               </div>
-            </div>
-
-            {/* RESIDENTIAL ADDRESS */}
-            <div className="space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-200">
-               <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest border-l-4 border-cac-green pl-3">2. YOUR RESIDENTIAL ADDRESS</h3>
-               <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="bn-res-state" className="text-[9px] font-black text-slate-400 uppercase block mb-1">STATE *</label>
-                    <input id="bn-res-state" autoComplete="address-level1" placeholder="STATE" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="bn-res-lga" className="text-[9px] font-black text-slate-400 uppercase block mb-1">LGA *</label>
-                    <input id="bn-res-lga" autoComplete="address-level2" placeholder="LGA" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="bn-res-city" className="text-[9px] font-black text-slate-400 uppercase block mb-1">CITY/TOWN/VILLAGE</label>
-                    <input id="bn-res-city" autoComplete="address-level2" placeholder="CITY/TOWN/VILLAGE" className="p-4 rounded-xl border-none font-bold w-full uppercase" />
-                  </div>
-                  <div>
-                    <label htmlFor="bn-res-house" className="text-[9px] font-black text-slate-400 uppercase block mb-1">HOUSE NUMBER</label>
-                    <input id="bn-res-house" autoComplete="street-address" placeholder="HOUSE NUMBER" className="p-4 rounded-xl border-none font-bold w-full uppercase" />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label htmlFor="bn-res-street" className="text-[9px] font-black text-slate-400 uppercase block mb-1">STREET NAME</label>
-                    <input id="bn-res-street" autoComplete="street-address" placeholder="STREET NAME" className="p-4 rounded-xl border-none font-bold w-full uppercase" />
-                  </div>
-               </div>
-            </div>
-
-            {/* BUSINESS ADDRESS */}
-            <div className="space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-200">
-               <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest border-l-4 border-cac-green pl-3">3. YOUR BUSINESS ADDRESS</h3>
-               <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="bn-biz-state" className="text-[9px] font-black text-slate-400 uppercase block mb-1">STATE *</label>
-                    <input id="bn-biz-state" autoComplete="address-level1" placeholder="STATE" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="bn-biz-lga" className="text-[9px] font-black text-slate-400 uppercase block mb-1">LGA *</label>
-                    <input id="bn-biz-lga" autoComplete="address-level2" placeholder="LGA" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="bn-biz-city" className="text-[9px] font-black text-slate-400 uppercase block mb-1">CITY/TOWN/VILLAGE</label>
-                    <input id="bn-biz-city" autoComplete="address-level2" placeholder="CITY/TOWN/VILLAGE" className="p-4 rounded-xl border-none font-bold w-full uppercase" />
-                  </div>
-                  <div>
-                    <label htmlFor="bn-biz-house" className="text-[9px] font-black text-slate-400 uppercase block mb-1">HOUSE NUMBER</label>
-                    <input id="bn-biz-house" autoComplete="street-address" placeholder="HOUSE NUMBER" className="p-4 rounded-xl border-none font-bold w-full uppercase" />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label htmlFor="bn-biz-street" className="text-[9px] font-black text-slate-400 uppercase block mb-1">STREET NAME *</label>
-                    <input id="bn-biz-street" autoComplete="street-address" placeholder="STREET NAME" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-               </div>
-            </div>
-
-            {/* BUSINESS DETAILS */}
-            <div className="space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-200">
-               <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest border-l-4 border-cac-green pl-3">4. BUSINESS DETAILS</h3>
-               <div className="grid gap-4">
-                  <div>
-                    <label htmlFor="bn-nature" className="text-[9px] font-black text-slate-400 uppercase block mb-1">NATURE OF BUSINESS *</label>
-                    <input id="bn-nature" autoComplete="off" placeholder="NATURE OF BUSINESS" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="bn-description" className="text-[9px] font-black text-slate-400 uppercase block mb-1">BUSINESS DESCRIPTION *</label>
-                    <textarea id="bn-description" autoComplete="off" placeholder="IN FULL DETAILS, WHAT THE BUSINESS IS ALL ABOUT, THE PRODUCT THE BUSINESS SELLS OR THE SERVICE IT RENDERS" className="w-full p-4 rounded-xl border-none font-bold h-32 uppercase" required></textarea>
-                  </div>
-               </div>
-            </div>
-
-            {/* PROPOSED BUSINESS NAMES */}
-            <div className="space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-200">
-               <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest border-l-4 border-cac-green pl-3">5. PROPOSED BUSINESS NAMES</h3>
-               <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="bn-name1" className="text-[9px] font-black text-slate-400 uppercase block mb-1">BUSINESS NAME 1 *</label>
-                    <input id="bn-name1" autoComplete="off" placeholder="BUSINESS NAME 1" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="bn-name2" className="text-[9px] font-black text-slate-400 uppercase block mb-1">BUSINESS NAME 2</label>
-                    <input id="bn-name2" autoComplete="off" placeholder="BUSINESS NAME 2" className="p-4 rounded-xl border-none font-bold w-full uppercase" />
-                  </div>
-               </div>
-            </div>
-
-            {/* BUSINESS EMAIL */}
-            <div className="space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-200">
-               <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest border-l-4 border-cac-green pl-3">6. BUSINESS EMAIL ADDRESS</h3>
-              <div>
-                <label htmlFor="bn-business-email" className="text-[9px] font-black text-slate-400 uppercase block mb-1">BUSINESS EMAIL ADDRESS *</label>
-                <input id="bn-business-email" type="email" autoComplete="email" placeholder="BUSINESS EMAIL ADDRESS" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-              </div>
-            </div>
+          <div className="space-y-6 p-6 bg-slate-50 rounded-3xl border border-slate-200">
+             <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest">Business Details</h3>
+             <div className="grid md:grid-cols-2 gap-4">
+                <input id="bn-name1" placeholder="Proposed Name 1" className="p-4 rounded-xl border-none font-bold" required />
+                <input id="bn-name2" placeholder="Proposed Name 2" className="p-4 rounded-xl border-none font-bold" required />
+                <NatureOfBusinessSelector />
+                <div className="md:col-span-2 space-y-2">
+                   <label className="text-[10px] font-black uppercase text-slate-400">Business Address</label>
+                   <div className="grid grid-cols-3 gap-2">
+                      <input id="b-state" placeholder="State" className="p-3 rounded-lg border-none" />
+                      <input id="b-lga" placeholder="LGA" className="p-3 rounded-lg border-none" />
+                      <input id="b-street" placeholder="Street/No" className="p-3 rounded-lg border-none" />
+                   </div>
+                </div>
+             </div>
           </div>
         );
       case 'Company Name':
@@ -771,428 +599,34 @@ const Registration = () => {
         );
       case 'NGO Registration':
         return (
-          <div className="space-y-8">
-            {/* SECTION 1: CHAIRMAN DETAILS */}
-            <div className="space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-200">
-               <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest border-l-4 border-cac-green pl-3">1. CHAIRMAN DETAILS</h3>
-               <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="chairman-fullname" className="text-[9px] font-black text-slate-400 uppercase block mb-1">FULL NAME *</label>
-                    <input id="chairman-fullname" autoComplete="off" placeholder="FULL NAME" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="chairman-nin" className="text-[9px] font-black text-slate-400 uppercase block mb-1">NIN NUMBER *</label>
-                    <input id="chairman-nin" autoComplete="off" placeholder="NIN NUMBER" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="chairman-phone" className="text-[9px] font-black text-slate-400 uppercase block mb-1">PHONE NUMBER *</label>
-                    <input id="chairman-phone" autoComplete="tel" placeholder="PHONE NUMBER" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="chairman-email" className="text-[9px] font-black text-slate-400 uppercase block mb-1">EMAIL ADDRESS *</label>
-                    <input id="chairman-email" type="email" autoComplete="email" placeholder="EMAIL ADDRESS" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="chairman-state" className="text-[9px] font-black text-slate-400 uppercase block mb-1">STATE *</label>
-                    <input id="chairman-state" autoComplete="address-level1" placeholder="STATE" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="chairman-lga" className="text-[9px] font-black text-slate-400 uppercase block mb-1">LGA *</label>
-                    <input id="chairman-lga" autoComplete="address-level2" placeholder="LGA" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="chairman-dob" className="text-[9px] font-black text-slate-400 uppercase block mb-1">DATE OF BIRTH *</label>
-                    <input id="chairman-dob" type="date" autoComplete="bday" className="p-4 rounded-xl border-none font-bold w-full" required />
-                  </div>
-               </div>
-               {/* Chairman Documents */}
-               <div className="mt-4 pt-4 border-t border-slate-200">
-                  <p className="text-[9px] font-black text-slate-400 uppercase mb-3">SUPPORT DOCUMENTS (SIGNATURE, PASSPORT PHOTOGRAPH AND NIN SLIP)</p>
-                  <div className="grid md:grid-cols-3 gap-4">
-                     <div>
-                       <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">SIGNATURE</label>
-                       <div className="flex flex-wrap gap-2">
-                         <label className="w-20 h-20 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all">
-                           <Upload className="text-slate-400" size={20} />
-                           <span className="text-[6px] font-black mt-1">UPLOAD</span>
-                           <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'Chairman Signature')} />
-                         </label>
-                         {previews['Chairman Signature']?.map((src, index) => (
-                           <div key={index} className="relative w-20 h-20 group">
-                             <img src={src} alt="preview" className="w-full h-full object-cover rounded-xl border-2 border-cac-green" />
-                             <button onClick={(e) => removeFile(e, 'Chairman Signature', index)} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:scale-110"><X size={12}/></button>
-                           </div>
-                         ))}
-                       </div>
-                     </div>
-                     <div>
-                       <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">PASSPORT PHOTOGRAPH</label>
-                       <div className="flex flex-wrap gap-2">
-                         <label className="w-20 h-20 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all">
-                           <Upload className="text-slate-400" size={20} />
-                           <span className="text-[6px] font-black mt-1">UPLOAD</span>
-                           <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'Chairman Passport')} />
-                         </label>
-                         {previews['Chairman Passport']?.map((src, index) => (
-                           <div key={index} className="relative w-20 h-20 group">
-                             <img src={src} alt="preview" className="w-full h-full object-cover rounded-xl border-2 border-cac-green" />
-                             <button onClick={(e) => removeFile(e, 'Chairman Passport', index)} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:scale-110"><X size={12}/></button>
-                           </div>
-                         ))}
-                       </div>
-                     </div>
-                     <div>
-                       <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">NIN SLIP</label>
-                       <div className="flex flex-wrap gap-2">
-                         <label className="w-20 h-20 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all">
-                           <Upload className="text-slate-400" size={20} />
-                           <span className="text-[6px] font-black mt-1">UPLOAD</span>
-                           <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'Chairman NIN Slip')} />
-                         </label>
-                         {previews['Chairman NIN Slip']?.map((src, index) => (
-                           <div key={index} className="relative w-20 h-20 group">
-                             <img src={src} alt="preview" className="w-full h-full object-cover rounded-xl border-2 border-cac-green" />
-                             <button onClick={(e) => removeFile(e, 'Chairman NIN Slip', index)} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:scale-110"><X size={12}/></button>
-                           </div>
-                         ))}
-                       </div>
-                     </div>
-                  </div>
-               </div>
-            </div>
-
-            {/* SECTION 2: SECRETARY DETAILS */}
-            <div className="space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-200">
-               <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest border-l-4 border-cac-green pl-3">2. SECRETARY DETAILS</h3>
-               <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="secretary-fullname" className="text-[9px] font-black text-slate-400 uppercase block mb-1">FULL NAME *</label>
-                    <input id="secretary-fullname" autoComplete="off" placeholder="FULL NAME" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="secretary-nin" className="text-[9px] font-black text-slate-400 uppercase block mb-1">NIN NUMBER *</label>
-                    <input id="secretary-nin" autoComplete="off" placeholder="NIN NUMBER" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="secretary-phone" className="text-[9px] font-black text-slate-400 uppercase block mb-1">PHONE NUMBER *</label>
-                    <input id="secretary-phone" autoComplete="tel" placeholder="PHONE NUMBER" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="secretary-email" className="text-[9px] font-black text-slate-400 uppercase block mb-1">EMAIL ADDRESS *</label>
-                    <input id="secretary-email" type="email" autoComplete="email" placeholder="EMAIL ADDRESS" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="secretary-state" className="text-[9px] font-black text-slate-400 uppercase block mb-1">STATE *</label>
-                    <input id="secretary-state" autoComplete="address-level1" placeholder="STATE" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="secretary-lga" className="text-[9px] font-black text-slate-400 uppercase block mb-1">LGA *</label>
-                    <input id="secretary-lga" autoComplete="address-level2" placeholder="LGA" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="secretary-dob" className="text-[9px] font-black text-slate-400 uppercase block mb-1">DATE OF BIRTH *</label>
-                    <input id="secretary-dob" type="date" autoComplete="bday" className="p-4 rounded-xl border-none font-bold w-full" required />
-                  </div>
-               </div>
-               {/* Secretary Documents */}
-               <div className="mt-4 pt-4 border-t border-slate-200">
-                  <p className="text-[9px] font-black text-slate-400 uppercase mb-3">SUPPORT DOCUMENTS (SIGNATURE, PASSPORT PHOTOGRAPH AND NIN SLIP)</p>
-                  <div className="grid md:grid-cols-3 gap-4">
-                     <div>
-                       <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">SIGNATURE</label>
-                       <div className="flex flex-wrap gap-2">
-                         <label className="w-20 h-20 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all">
-                           <Upload className="text-slate-400" size={20} />
-                           <span className="text-[6px] font-black mt-1">UPLOAD</span>
-                           <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'Secretary Signature')} />
-                         </label>
-                         {previews['Secretary Signature']?.map((src, index) => (
-                           <div key={index} className="relative w-20 h-20 group">
-                             <img src={src} alt="preview" className="w-full h-full object-cover rounded-xl border-2 border-cac-green" />
-                             <button onClick={(e) => removeFile(e, 'Secretary Signature', index)} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:scale-110"><X size={12}/></button>
-                           </div>
-                         ))}
-                       </div>
-                     </div>
-                     <div>
-                       <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">PASSPORT PHOTOGRAPH</label>
-                       <div className="flex flex-wrap gap-2">
-                         <label className="w-20 h-20 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all">
-                           <Upload className="text-slate-400" size={20} />
-                           <span className="text-[6px] font-black mt-1">UPLOAD</span>
-                           <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'Secretary Passport')} />
-                         </label>
-                         {previews['Secretary Passport']?.map((src, index) => (
-                           <div key={index} className="relative w-20 h-20 group">
-                             <img src={src} alt="preview" className="w-full h-full object-cover rounded-xl border-2 border-cac-green" />
-                             <button onClick={(e) => removeFile(e, 'Secretary Passport', index)} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:scale-110"><X size={12}/></button>
-                           </div>
-                         ))}
-                       </div>
-                     </div>
-                     <div>
-                       <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">NIN SLIP</label>
-                       <div className="flex flex-wrap gap-2">
-                         <label className="w-20 h-20 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all">
-                           <Upload className="text-slate-400" size={20} />
-                           <span className="text-[6px] font-black mt-1">UPLOAD</span>
-                           <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'Secretary NIN Slip')} />
-                         </label>
-                         {previews['Secretary NIN Slip']?.map((src, index) => (
-                           <div key={index} className="relative w-20 h-20 group">
-                             <img src={src} alt="preview" className="w-full h-full object-cover rounded-xl border-2 border-cac-green" />
-                             <button onClick={(e) => removeFile(e, 'Secretary NIN Slip', index)} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:scale-110"><X size={12}/></button>
-                           </div>
-                         ))}
-                       </div>
-                     </div>
-                  </div>
-               </div>
-            </div>
-
-            {/* SECTION 3: TRUSTEE 1 DETAILS */}
-            <div className="space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-200">
-               <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest border-l-4 border-cac-green pl-3">3. TRUSTEE 1 DETAILS</h3>
-               <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="trustee1-fullname" className="text-[9px] font-black text-slate-400 uppercase block mb-1">FULL NAME *</label>
-                    <input id="trustee1-fullname" autoComplete="off" placeholder="FULL NAME" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="trustee1-nin" className="text-[9px] font-black text-slate-400 uppercase block mb-1">NIN NUMBER *</label>
-                    <input id="trustee1-nin" autoComplete="off" placeholder="NIN NUMBER" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="trustee1-phone" className="text-[9px] font-black text-slate-400 uppercase block mb-1">PHONE NUMBER *</label>
-                    <input id="trustee1-phone" autoComplete="tel" placeholder="PHONE NUMBER" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="trustee1-email" className="text-[9px] font-black text-slate-400 uppercase block mb-1">EMAIL ADDRESS *</label>
-                    <input id="trustee1-email" type="email" autoComplete="email" placeholder="EMAIL ADDRESS" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="trustee1-state" className="text-[9px] font-black text-slate-400 uppercase block mb-1">STATE *</label>
-                    <input id="trustee1-state" autoComplete="address-level1" placeholder="STATE" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="trustee1-lga" className="text-[9px] font-black text-slate-400 uppercase block mb-1">LGA *</label>
-                    <input id="trustee1-lga" autoComplete="address-level2" placeholder="LGA" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="trustee1-dob" className="text-[9px] font-black text-slate-400 uppercase block mb-1">DATE OF BIRTH *</label>
-                    <input id="trustee1-dob" type="date" autoComplete="bday" className="p-4 rounded-xl border-none font-bold w-full" required />
-                  </div>
-               </div>
-               {/* Trustee 1 Documents */}
-               <div className="mt-4 pt-4 border-t border-slate-200">
-                  <p className="text-[9px] font-black text-slate-400 uppercase mb-3">SUPPORT DOCUMENTS (SIGNATURE, PASSPORT PHOTOGRAPH AND NIN SLIP)</p>
-                  <div className="grid md:grid-cols-3 gap-4">
-                     <div>
-                       <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">SIGNATURE</label>
-                       <div className="flex flex-wrap gap-2">
-                         <label className="w-20 h-20 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all">
-                           <Upload className="text-slate-400" size={20} />
-                           <span className="text-[6px] font-black mt-1">UPLOAD</span>
-                           <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'Trustee1 Signature')} />
-                         </label>
-                         {previews['Trustee1 Signature']?.map((src, index) => (
-                           <div key={index} className="relative w-20 h-20 group">
-                             <img src={src} alt="preview" className="w-full h-full object-cover rounded-xl border-2 border-cac-green" />
-                             <button onClick={(e) => removeFile(e, 'Trustee1 Signature', index)} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:scale-110"><X size={12}/></button>
-                           </div>
-                         ))}
-                       </div>
-                     </div>
-                     <div>
-                       <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">PASSPORT PHOTOGRAPH</label>
-                       <div className="flex flex-wrap gap-2">
-                         <label className="w-20 h-20 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all">
-                           <Upload className="text-slate-400" size={20} />
-                           <span className="text-[6px] font-black mt-1">UPLOAD</span>
-                           <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'Trustee1 Passport')} />
-                         </label>
-                         {previews['Trustee1 Passport']?.map((src, index) => (
-                           <div key={index} className="relative w-20 h-20 group">
-                             <img src={src} alt="preview" className="w-full h-full object-cover rounded-xl border-2 border-cac-green" />
-                             <button onClick={(e) => removeFile(e, 'Trustee1 Passport', index)} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:scale-110"><X size={12}/></button>
-                           </div>
-                         ))}
-                       </div>
-                     </div>
-                     <div>
-                       <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">NIN SLIP</label>
-                       <div className="flex flex-wrap gap-2">
-                         <label className="w-20 h-20 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all">
-                           <Upload className="text-slate-400" size={20} />
-                           <span className="text-[6px] font-black mt-1">UPLOAD</span>
-                           <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'Trustee1 NIN Slip')} />
-                         </label>
-                         {previews['Trustee1 NIN Slip']?.map((src, index) => (
-                           <div key={index} className="relative w-20 h-20 group">
-                             <img src={src} alt="preview" className="w-full h-full object-cover rounded-xl border-2 border-cac-green" />
-                             <button onClick={(e) => removeFile(e, 'Trustee1 NIN Slip', index)} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:scale-110"><X size={12}/></button>
-                           </div>
-                         ))}
-                       </div>
-                     </div>
-                  </div>
-               </div>
-            </div>
-
-            {/* SECTION 4: TRUSTEE 2 DETAILS */}
-            <div className="space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-200">
-               <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest border-l-4 border-cac-green pl-3">4. TRUSTEE 2 DETAILS</h3>
-               <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="trustee2-fullname" className="text-[9px] font-black text-slate-400 uppercase block mb-1">FULL NAME *</label>
-                    <input id="trustee2-fullname" autoComplete="off" placeholder="FULL NAME" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="trustee2-nin" className="text-[9px] font-black text-slate-400 uppercase block mb-1">NIN NUMBER *</label>
-                    <input id="trustee2-nin" autoComplete="off" placeholder="NIN NUMBER" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="trustee2-phone" className="text-[9px] font-black text-slate-400 uppercase block mb-1">PHONE NUMBER *</label>
-                    <input id="trustee2-phone" autoComplete="tel" placeholder="PHONE NUMBER" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="trustee2-email" className="text-[9px] font-black text-slate-400 uppercase block mb-1">EMAIL ADDRESS *</label>
-                    <input id="trustee2-email" type="email" autoComplete="email" placeholder="EMAIL ADDRESS" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="trustee2-state" className="text-[9px] font-black text-slate-400 uppercase block mb-1">STATE *</label>
-                    <input id="trustee2-state" autoComplete="address-level1" placeholder="STATE" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="trustee2-lga" className="text-[9px] font-black text-slate-400 uppercase block mb-1">LGA *</label>
-                    <input id="trustee2-lga" autoComplete="address-level2" placeholder="LGA" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="trustee2-dob" className="text-[9px] font-black text-slate-400 uppercase block mb-1">DATE OF BIRTH *</label>
-                    <input id="trustee2-dob" type="date" autoComplete="bday" className="p-4 rounded-xl border-none font-bold w-full" required />
-                  </div>
-               </div>
-               {/* Trustee 2 Documents */}
-               <div className="mt-4 pt-4 border-t border-slate-200">
-                  <p className="text-[9px] font-black text-slate-400 uppercase mb-3">SUPPORT DOCUMENTS (SIGNATURE, PASSPORT PHOTOGRAPH AND NIN SLIP)</p>
-                  <div className="grid md:grid-cols-3 gap-4">
-                     <div>
-                       <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">SIGNATURE</label>
-                       <div className="flex flex-wrap gap-2">
-                         <label className="w-20 h-20 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all">
-                           <Upload className="text-slate-400" size={20} />
-                           <span className="text-[6px] font-black mt-1">UPLOAD</span>
-                           <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'Trustee2 Signature')} />
-                         </label>
-                         {previews['Trustee2 Signature']?.map((src, index) => (
-                           <div key={index} className="relative w-20 h-20 group">
-                             <img src={src} alt="preview" className="w-full h-full object-cover rounded-xl border-2 border-cac-green" />
-                             <button onClick={(e) => removeFile(e, 'Trustee2 Signature', index)} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:scale-110"><X size={12}/></button>
-                           </div>
-                         ))}
-                       </div>
-                     </div>
-                     <div>
-                       <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">PASSPORT PHOTOGRAPH</label>
-                       <div className="flex flex-wrap gap-2">
-                         <label className="w-20 h-20 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all">
-                           <Upload className="text-slate-400" size={20} />
-                           <span className="text-[6px] font-black mt-1">UPLOAD</span>
-                           <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'Trustee2 Passport')} />
-                         </label>
-                         {previews['Trustee2 Passport']?.map((src, index) => (
-                           <div key={index} className="relative w-20 h-20 group">
-                             <img src={src} alt="preview" className="w-full h-full object-cover rounded-xl border-2 border-cac-green" />
-                             <button onClick={(e) => removeFile(e, 'Trustee2 Passport', index)} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:scale-110"><X size={12}/></button>
-                           </div>
-                         ))}
-                       </div>
-                     </div>
-                     <div>
-                       <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">NIN SLIP</label>
-                       <div className="flex flex-wrap gap-2">
-                         <label className="w-20 h-20 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all">
-                           <Upload className="text-slate-400" size={20} />
-                           <span className="text-[6px] font-black mt-1">UPLOAD</span>
-                           <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'Trustee2 NIN Slip')} />
-                         </label>
-                         {previews['Trustee2 NIN Slip']?.map((src, index) => (
-                           <div key={index} className="relative w-20 h-20 group">
-                             <img src={src} alt="preview" className="w-full h-full object-cover rounded-xl border-2 border-cac-green" />
-                             <button onClick={(e) => removeFile(e, 'Trustee2 NIN Slip', index)} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:scale-110"><X size={12}/></button>
-                           </div>
-                         ))}
-                       </div>
-                     </div>
-                  </div>
-               </div>
-            </div>
-
-            {/* SECTION 5: TRUSTEES TENURE */}
-            <div className="space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-200">
-               <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest border-l-4 border-cac-green pl-3">5. TRUSTEES TENURE</h3>
-               <div>
-                 <label htmlFor="ngo-tenure" className="text-[9px] font-black text-slate-400 uppercase block mb-1">TRUSTEES TENURE *</label>
-                 <input id="ngo-tenure" autoComplete="off" placeholder="TRUSTEES TENURE (20 YEARS)" className="p-4 rounded-xl border-none font-bold w-full uppercase" value="20 YEARS" required />
-               </div>
-            </div>
-
-            {/* SECTION 6: NGO INFORMATION */}
-            <div className="space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-200">
-               <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest border-l-4 border-cac-green pl-3">6. NGO INFORMATION</h3>
-               <div className="grid md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
-                    <label htmlFor="ngo-address" className="text-[9px] font-black text-slate-400 uppercase block mb-1">NGO FULL ADDRESS *</label>
-                    <input id="ngo-address" autoComplete="street-address" placeholder="NGO FULL ADDRESS" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="ngo-phone" className="text-[9px] font-black text-slate-400 uppercase block mb-1">NGO PHONE NUMBER *</label>
-                    <input id="ngo-phone" autoComplete="tel" placeholder="NGO PHONE NUMBER" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="ngo-email" className="text-[9px] font-black text-slate-400 uppercase block mb-1">NGO EMAIL ADDRESS *</label>
-                    <input id="ngo-email" type="email" autoComplete="email" placeholder="NGO EMAIL ADDRESS" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-               </div>
-            </div>
-
-            {/* SECTION 7: PROPOSED NGO NAMES */}
-            <div className="space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-200">
-               <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest border-l-4 border-cac-green pl-3">7. THREE PROPOSED NGO NAMES</h3>
-               <div className="grid gap-4">
-                  <div>
-                    <label htmlFor="ngo-name1" className="text-[9px] font-black text-slate-400 uppercase block mb-1">1. PROPOSED NGO NAME *</label>
-                    <input id="ngo-name1" autoComplete="off" placeholder="PROPOSED NGO NAME 1" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="ngo-name2" className="text-[9px] font-black text-slate-400 uppercase block mb-1">2. PROPOSED NGO NAME</label>
-                    <input id="ngo-name2" autoComplete="off" placeholder="PROPOSED NGO NAME 2" className="p-4 rounded-xl border-none font-bold w-full uppercase" />
-                  </div>
-                  <div>
-                    <label htmlFor="ngo-name3" className="text-[9px] font-black text-slate-400 uppercase block mb-1">3. PROPOSED NGO NAME</label>
-                    <input id="ngo-name3" autoComplete="off" placeholder="PROPOSED NGO NAME 3" className="p-4 rounded-xl border-none font-bold w-full uppercase" />
-                  </div>
-               </div>
-            </div>
-
-            {/* SECTION 8: AIMS AND OBJECTIVES */}
-            <div className="space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-200">
-               <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest border-l-4 border-cac-green pl-3">8. AIM AND OBJECTIVES</h3>
-               <div className="space-y-4">
-                  <div>
-                    <label htmlFor="ngo-aim1" className="text-[9px] font-black text-slate-400 uppercase block mb-1">1. AIM *</label>
-                    <textarea id="ngo-aim1" autoComplete="off" placeholder="1. AIM..." className="w-full p-4 rounded-xl border-none font-bold h-24 uppercase" required></textarea>
-                  </div>
-                  <div>
-                    <label htmlFor="ngo-aim2" className="text-[9px] font-black text-slate-400 uppercase block mb-1">2. AIM *</label>
-                    <textarea id="ngo-aim2" autoComplete="off" placeholder="2. AIM..." className="w-full p-4 rounded-xl border-none font-bold h-24 uppercase" required></textarea>
-                  </div>
-                  <div>
-                    <label htmlFor="ngo-aim3" className="text-[9px] font-black text-slate-400 uppercase block mb-1">3. AIM</label>
-                    <textarea id="ngo-aim3" autoComplete="off" placeholder="3. AIM..." className="w-full p-4 rounded-xl border-none font-bold h-24 uppercase"></textarea>
-                  </div>
-               </div>
-            </div>
+          <div className="space-y-6 p-6 bg-slate-50 rounded-3xl border border-slate-200">
+             <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest">Trustees & Aims</h3>
+             <div className="grid gap-4">
+                <div>
+                  <label htmlFor="ngo-name1" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Proposed NGO Name</label>
+                  <input id="ngo-name1" autoComplete="off" placeholder="Proposed NGO Name 1" className="p-4 rounded-xl border-none font-bold w-full" />
+                </div>
+                <NatureOfBusinessSelector />
+                <div>
+                  <label htmlFor="ngo-tenure" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Trustees Tenure</label>
+                  <input id="ngo-tenure" autoComplete="off" placeholder="Trustees Tenure (e.g. 20 Years)" className="p-4 rounded-xl border-none font-bold w-full" />
+                </div>
+                <div>
+                  <label htmlFor="ngo-address" className="text-[9px] font-black text-slate-400 uppercase block mb-1">NGO Full Address</label>
+                  <input id="ngo-address" autoComplete="street-address" placeholder="NGO Full Address" className="p-4 rounded-xl border-none font-bold w-full" />
+                </div>
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black uppercase text-slate-400">Aims & Objectives</label>
+                   <div>
+                     <label htmlFor="ngo-aim1" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Aim 1</label>
+                     <input id="ngo-aim1" autoComplete="off" placeholder="1. Aim..." className="w-full p-3 rounded-lg border-none mb-2" />
+                   </div>
+                   <div>
+                     <label htmlFor="ngo-aim2" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Aim 2</label>
+                     <input id="ngo-aim2" autoComplete="off" placeholder="2. Aim..." className="w-full p-3 rounded-lg border-none" />
+                   </div>
+                </div>
+             </div>
           </div>
         );
       case 'Export Licence':
@@ -1219,124 +653,19 @@ const Registration = () => {
           <div className="space-y-6 p-6 bg-slate-50 rounded-3xl border border-slate-200">
              <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest">Trademark Details</h3>
              <div className="grid md:grid-cols-2 gap-4">
-                {/* Proposed Trademark Name */}
                 <div className="md:col-span-2">
-                  <label htmlFor="tm-name" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Proposed Trademark Name *</label>
+                  <label htmlFor="tm-name" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Proposed Trademark Name</label>
                   <input id="tm-name" autoComplete="off" placeholder="Proposed Trademark Name" className="p-4 rounded-xl border-none font-bold w-full" required />
                 </div>
-
-                {/* Surname */}
-                <div>
-                  <label htmlFor="tm-surname" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Surname *</label>
-                  <input id="tm-surname" autoComplete="family-name" placeholder="Surname" className="p-4 rounded-xl border-none font-bold w-full" required />
-                </div>
-
-                {/* First Name */}
-                <div>
-                  <label htmlFor="tm-firstname" className="text-[9px] font-black text-slate-400 uppercase block mb-1">First Name *</label>
-                  <input id="tm-firstname" autoComplete="given-name" placeholder="First Name" className="p-4 rounded-xl border-none font-bold w-full" required />
-                </div>
-
-                {/* Middle Name */}
-                <div>
-                  <label htmlFor="tm-middlename" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Middle Name</label>
-                  <input id="tm-middlename" autoComplete="additional-name" placeholder="Middle Name" className="p-4 rounded-xl border-none font-bold w-full" />
-                </div>
-
-                {/* Business/Company Name */}
-                <div>
-                  <label htmlFor="tm-company-name" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Business/Company Name *</label>
-                  <input id="tm-company-name" autoComplete="off" placeholder="Business/Company Name" className="p-4 rounded-xl border-none font-bold w-full" required />
-                </div>
-
-                {/* Business/Company Address */}
-                <div className="md:col-span-2">
-                  <label htmlFor="tm-company-address" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Business/Company Address *</label>
-                  <input id="tm-company-address" autoComplete="street-address" placeholder="Business/Company Address" className="p-4 rounded-xl border-none font-bold w-full" required />
-                </div>
-
-                {/* Phone Number */}
-                <div>
-                  <label htmlFor="tm-phone" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Phone Number *</label>
-                  <input id="tm-phone" autoComplete="tel" placeholder="Phone Number" className="p-4 rounded-xl border-none font-bold w-full" required />
-                </div>
-
-                {/* Email */}
-                <div>
-                  <label htmlFor="tm-email" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Email *</label>
-                  <input id="tm-email" type="email" autoComplete="email" placeholder="Email Address" className="p-4 rounded-xl border-none font-bold w-full" required />
-                </div>
-
-                {/* Class of Business */}
                 <div className="md:col-span-2 space-y-2">
-                   <label htmlFor="tm-class" className="text-[10px] font-black uppercase text-slate-400">Class of Business/Goods/Services *</label>
-                   <select id="tm-class" autoComplete="off" className="w-full p-4 rounded-xl border-none font-bold bg-white" required>
+                   <label htmlFor="tm-class" className="text-[10px] font-black uppercase text-slate-400">Class of Goods/Services</label>
+                   <select id="tm-class" autoComplete="off" className="w-full p-4 rounded-xl border-none font-bold bg-white">
                       <option value="">Select Class...</option>
-                      <option value="Class 1 (Chemicals)">Class 1 (Chemicals)</option>
-                      <option value="Class 2 (Paints)">Class 2 (Paints)</option>
-                      <option value="Class 3 (Cosmetics)">Class 3 (Cosmetics)</option>
-                      <option value="Class 4 (Oils/Fuels)">Class 4 (Oils/Fuels)</option>
-                      <option value="Class 5 (Pharmaceuticals)">Class 5 (Pharmaceuticals)</option>
-                      <option value="Class 6 (Metals)">Class 6 (Metals)</option>
-                      <option value="Class 7 (Machinery)">Class 7 (Machinery)</option>
-                      <option value="Class 8 (Hand Tools)">Class 8 (Hand Tools)</option>
-                      <option value="Class 9 (Electronics)">Class 9 (Electronics)</option>
-                      <option value="Class 10 (Medical Devices)">Class 10 (Medical Devices)</option>
-                      <option value="Class 11 (Lighting)">Class 11 (Lighting)</option>
-                      <option value="Class 12 (Vehicles)">Class 12 (Vehicles)</option>
-                      <option value="Class 13 (Firearms)">Class 13 (Firearms)</option>
-                      <option value="Class 14 (Jewelry)">Class 14 (Jewelry)</option>
-                      <option value="Class 15 (Musical Instruments)">Class 15 (Musical Instruments)</option>
                       <option value="Class 16 (Paper/Books)">Class 16 (Paper/Books)</option>
-                      <option value="Class 17 (Rubber/Plastic)">Class 17 (Rubber/Plastic)</option>
-                      <option value="Class 18 (Leather)">Class 18 (Leather)</option>
-                      <option value="Class 19 (Building Materials)">Class 19 (Building Materials)</option>
-                      <option value="Class 20 (Furniture)">Class 20 (Furniture)</option>
-                      <option value="Class 21 (Household Goods)">Class 21 (Household Goods)</option>
-                      <option value="Class 22 (Textiles)">Class 22 (Textiles)</option>
-                      <option value="Class 23 (Yarns/Threads)">Class 23 (Yarns/Threads)</option>
-                      <option value="Class 24 (Fabrics)">Class 24 (Fabrics)</option>
                       <option value="Class 25 (Clothing)">Class 25 (Clothing)</option>
-                      <option value="Class 26 (Lace/Trimmings)">Class 26 (Lace/Trimmings)</option>
-                      <option value="Class 27 (Floor Coverings)">Class 27 (Floor Coverings)</option>
-                      <option value="Class 28 (Games/Sports)">Class 28 (Games/Sports)</option>
-                      <option value="Class 29 (Food Products)">Class 29 (Food Products)</option>
-                      <option value="Class 30 (Coffee/Tea)">Class 30 (Coffee/Tea)</option>
-                      <option value="Class 31 (Agriculture)">Class 31 (Agriculture)</option>
-                      <option value="Class 32 (Beer/Beverages)">Class 32 (Beer/Beverages)</option>
-                      <option value="Class 33 (Alcohol)">Class 33 (Alcohol)</option>
-                      <option value="Class 34 (Tobacco)">Class 34 (Tobacco)</option>
                       <option value="Class 35 (Advertising/Business)">Class 35 (Advertising/Business)</option>
-                      <option value="Class 36 (Insurance/Finance)">Class 36 (Insurance/Finance)</option>
-                      <option value="Class 37 (Construction)">Class 37 (Construction)</option>
-                      <option value="Class 38 (Telecommunications)">Class 38 (Telecommunications)</option>
-                      <option value="Class 39 (Transport/Logistics)">Class 39 (Transport/Logistics)</option>
-                      <option value="Class 40 (Material Treatment)">Class 40 (Material Treatment)</option>
-                      <option value="Class 41 (Education/Entertainment)">Class 41 (Education/Entertainment)</option>
-                      <option value="Class 42 (Technology Services)">Class 42 (Technology Services)</option>
-                      <option value="Class 43 (Hotel/Restaurant)">Class 43 (Hotel/Restaurant)</option>
-                      <option value="Class 44 (Medical/Agriculture)">Class 44 (Medical/Agriculture)</option>
-                      <option value="Class 45 (Legal Services)">Class 45 (Legal Services)</option>
                       <option value="Other">Other</option>
                    </select>
-                </div>
-
-                {/* Logo Upload */}
-                <div className="md:col-span-2">
-                  <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">Logo (if available)</label>
-                  <div className="flex flex-wrap gap-4">
-                    <label className="w-28 h-28 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all">
-                      <Upload className="text-slate-400" size={24} />
-                      <span className="text-[8px] font-black mt-2">UPLOAD LOGO</span>
-                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'Logo')} />
-                    </label>
-                    {previews['Logo']?.map((src, index) => (
-                      <div key={index} className="relative w-28 h-28 group">
-                        <img src={src} alt="Logo preview" className="w-full h-full object-cover rounded-xl border-2 border-cac-green" />
-                        <button onClick={(e) => removeFile(e, 'Logo', index)} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full shadow-lg hover:scale-110 transition-transform"><X size={14}/></button>
-                      </div>
-                    ))}
-                  </div>
                 </div>
              </div>
           </div>
@@ -1345,421 +674,70 @@ const Registration = () => {
         return (
           <div className="space-y-6 p-6 bg-slate-50 rounded-3xl border border-slate-200">
              <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest">Annual Returns Filing</h3>
-             
-            {/* Section 1: Company Information */}
-            <div className="space-y-4">
-               <h4 className="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2">(1) COMPANY DETAILS</h4>
-               <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="ann-company-name" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Registered Company Name *</label>
-                    <input id="ann-company-name" autoComplete="off" placeholder="Registered Company Name" className="p-4 rounded-xl border-none font-bold w-full" required />
-                  </div>
-                  <div>
-                    <label htmlFor="ann-rc-number" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Registration No (RC Number) *</label>
-                    <input id="ann-rc-number" autoComplete="off" placeholder="RC Number" className="p-4 rounded-xl border-none font-bold w-full" required />
-                  </div>
-                  <div>
-                    <label htmlFor="ann-company-email" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Company Email Address *</label>
-                    <input id="ann-company-email" type="email" autoComplete="email" placeholder="Company Email Address" className="p-4 rounded-xl border-none font-bold w-full" required />
-                  </div>
-                  <div>
-                    <label htmlFor="ann-share-capital" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Current Share Capital *</label>
-                    <input id="ann-share-capital" autoComplete="off" placeholder="Current Share Capital (e.g. 1,000,000)" className="p-4 rounded-xl border-none font-bold w-full" required />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label htmlFor="ann-company-address" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Company Current Business Address *</label>
-                    <input id="ann-company-address" autoComplete="street-address" placeholder="Company Current Business Address" className="p-4 rounded-xl border-none font-bold w-full" required />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label htmlFor="ann-business-nature" className="text-[9px] font-black text-slate-400 uppercase block mb-1">What is the company into? *</label>
-                    <input id="ann-business-nature" autoComplete="off" placeholder="Nature of Business (e.g. Trading, Manufacturing, Services)" className="p-4 rounded-xl border-none font-bold w-full" required />
-                  </div>
-               </div>
-            </div>
-
-            {/* Section 2: Directors Information */}
-            <div className="space-y-4">
-               <h4 className="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2">(2) COMPANY DIRECTORS/SHAREHOLDERS INFORMATION</h4>
-               <p className="text-xs text-slate-500 italic">Note: All directors of the company must be listed. Click "Add Director" to add more.</p>
-               
-               {/* Director 1 */}
-               <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-3">
-                  <p className="text-xs font-bold text-cac-blue uppercase">Director & Shareholder 1</p>
-                  <div className="grid md:grid-cols-3 gap-3">
-                     <div>
-                       <label htmlFor="dir1-surname" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Surname *</label>
-                       <input id="dir1-surname" autoComplete="family-name" placeholder="Surname" className="p-3 bg-slate-50 rounded-lg w-full" required />
-                     </div>
-                     <div>
-                       <label htmlFor="dir1-firstname" className="text-[9px] font-black text-slate-400 uppercase block mb-1">First Name *</label>
-                       <input id="dir1-firstname" autoComplete="given-name" placeholder="First Name" className="p-3 bg-slate-50 rounded-lg w-full" required />
-                     </div>
-                     <div>
-                       <label htmlFor="dir1-othername" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Other Name</label>
-                       <input id="dir1-othername" autoComplete="additional-name" placeholder="Other Name" className="p-3 bg-slate-50 rounded-lg w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="dir1-dob" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Date of Birth *</label>
-                       <input id="dir1-dob" type="date" autoComplete="bday" className="p-3 bg-slate-50 rounded-lg w-full" required />
-                     </div>
-                     <div>
-                       <label htmlFor="dir1-gender" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Gender *</label>
-                       <select id="dir1-gender" autoComplete="sex" className="p-3 bg-slate-50 rounded-lg w-full" required>
-                         <option value="">Select Gender</option>
-                         <option value="Male">Male</option>
-                         <option value="Female">Female</option>
-                       </select>
-                     </div>
-                     <div>
-                       <label htmlFor="dir1-phone" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Phone Number *</label>
-                       <input id="dir1-phone" autoComplete="tel" placeholder="Phone Number" className="p-3 bg-slate-50 rounded-lg w-full" required />
-                     </div>
-                     <div className="md:col-span-2">
-                       <label htmlFor="dir1-address" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Full Residential Address *</label>
-                       <input id="dir1-address" autoComplete="street-address" placeholder="Full Residential Address" className="p-3 bg-slate-50 rounded-lg w-full" required />
-                     </div>
-                     <div>
-                       <label htmlFor="dir1-nin" className="text-[9px] font-black text-slate-400 uppercase block mb-1">NIN Number *</label>
-                       <input id="dir1-nin" autoComplete="off" placeholder="NIN Number" className="p-3 bg-slate-50 rounded-lg w-full" required />
-                     </div>
-                     <div>
-                       <label htmlFor="dir1-email" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Functional Email Address *</label>
-                       <input id="dir1-email" type="email" autoComplete="email" placeholder="Email Address" className="p-3 bg-slate-50 rounded-lg w-full" required />
-                     </div>
-                     <div>
-                       <label htmlFor="dir1-shares" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Amount of Share Held *</label>
-                       <input id="dir1-shares" autoComplete="off" placeholder="Share Amount" className="p-3 bg-slate-50 rounded-lg w-full" required />
-                     </div>
-                     <div>
-                       <label htmlFor="dir1-shareholder" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Is Shareholder? *</label>
-                       <select id="dir1-shareholder" autoComplete="off" className="p-3 bg-slate-50 rounded-lg w-full" required>
-                         <option value="">Select</option>
-                         <option value="YES">YES</option>
-                         <option value="NO">NO</option>
-                       </select>
-                     </div>
-                     <div>
-                       <label htmlFor="dir1-director" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Is Director Too? *</label>
-                       <select id="dir1-director" autoComplete="off" className="p-3 bg-slate-50 rounded-lg w-full" required>
-                         <option value="">Select</option>
-                         <option value="YES">YES</option>
-                         <option value="NO">NO</option>
-                       </select>
-                     </div>
-                  </div>
-               </div>
-
-               {/* Director 2 */}
-              <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-3">
-                  <p className="text-xs font-bold text-cac-blue uppercase">Director & Shareholder 2</p>
-                  <div className="grid md:grid-cols-3 gap-3">
-                     <div>
-                       <label htmlFor="dir2-surname" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Surname</label>
-                       <input id="dir2-surname" autoComplete="family-name" placeholder="Surname" className="p-3 bg-slate-50 rounded-lg w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="dir2-firstname" className="text-[9px] font-black text-slate-400 uppercase block mb-1">First Name</label>
-                       <input id="dir2-firstname" autoComplete="given-name" placeholder="First Name" className="p-3 bg-slate-50 rounded-lg w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="dir2-othername" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Other Name</label>
-                       <input id="dir2-othername" autoComplete="additional-name" placeholder="Other Name" className="p-3 bg-slate-50 rounded-lg w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="dir2-dob" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Date of Birth</label>
-                       <input id="dir2-dob" type="date" autoComplete="bday" className="p-3 bg-slate-50 rounded-lg w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="dir2-gender" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Gender</label>
-                       <select id="dir2-gender" autoComplete="sex" className="p-3 bg-slate-50 rounded-lg w-full">
-                         <option value="">Select Gender</option>
-                         <option value="Male">Male</option>
-                         <option value="Female">Female</option>
-                       </select>
-                     </div>
-                     <div>
-                       <label htmlFor="dir2-phone" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Phone Number</label>
-                       <input id="dir2-phone" autoComplete="tel" placeholder="Phone Number" className="p-3 bg-slate-50 rounded-lg w-full" />
-                     </div>
-                     <div className="md:col-span-2">
-                       <label htmlFor="dir2-address" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Full Residential Address</label>
-                       <input id="dir2-address" autoComplete="street-address" placeholder="Full Residential Address" className="p-3 bg-slate-50 rounded-lg w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="dir2-nin" className="text-[9px] font-black text-slate-400 uppercase block mb-1">NIN Number</label>
-                       <input id="dir2-nin" autoComplete="off" placeholder="NIN Number" className="p-3 bg-slate-50 rounded-lg w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="dir2-email" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Functional Email Address</label>
-                       <input id="dir2-email" type="email" autoComplete="email" placeholder="Email Address" className="p-3 bg-slate-50 rounded-lg w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="dir2-shares" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Amount of Share Held</label>
-                       <input id="dir2-shares" autoComplete="off" placeholder="Share Amount" className="p-3 bg-slate-50 rounded-lg w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="dir2-shareholder" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Is Shareholder?</label>
-                       <select id="dir2-shareholder" autoComplete="off" className="p-3 bg-slate-50 rounded-lg w-full">
-                         <option value="">Select</option>
-                         <option value="YES">YES</option>
-                         <option value="NO">NO</option>
-                       </select>
-                     </div>
-                     <div>
-                       <label htmlFor="dir2-director" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Is Director Too?</label>
-                       <select id="dir2-director" autoComplete="off" className="p-3 bg-slate-50 rounded-lg w-full">
-                         <option value="">Select</option>
-                         <option value="YES">YES</option>
-                         <option value="NO">NO</option>
-                       </select>
-                     </div>
-                  </div>
-               </div>
-
-               {/* Director 3 */}
-              <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-3">
-                  <p className="text-xs font-bold text-cac-blue uppercase">Director & Shareholder 3</p>
-                  <div className="grid md:grid-cols-3 gap-3">
-                     <div>
-                       <label htmlFor="dir3-surname" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Surname</label>
-                       <input id="dir3-surname" autoComplete="family-name" placeholder="Surname" className="p-3 bg-slate-50 rounded-lg w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="dir3-firstname" className="text-[9px] font-black text-slate-400 uppercase block mb-1">First Name</label>
-                       <input id="dir3-firstname" autoComplete="given-name" placeholder="First Name" className="p-3 bg-slate-50 rounded-lg w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="dir3-othername" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Other Name</label>
-                       <input id="dir3-othername" autoComplete="additional-name" placeholder="Other Name" className="p-3 bg-slate-50 rounded-lg w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="dir3-dob" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Date of Birth</label>
-                       <input id="dir3-dob" type="date" autoComplete="bday" className="p-3 bg-slate-50 rounded-lg w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="dir3-gender" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Gender</label>
-                       <select id="dir3-gender" autoComplete="sex" className="p-3 bg-slate-50 rounded-lg w-full">
-                         <option value="">Select Gender</option>
-                         <option value="Male">Male</option>
-                         <option value="Female">Female</option>
-                       </select>
-                     </div>
-                     <div>
-                       <label htmlFor="dir3-phone" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Phone Number</label>
-                       <input id="dir3-phone" autoComplete="tel" placeholder="Phone Number" className="p-3 bg-slate-50 rounded-lg w-full" />
-                     </div>
-                     <div className="md:col-span-2">
-                       <label htmlFor="dir3-address" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Full Residential Address</label>
-                       <input id="dir3-address" autoComplete="street-address" placeholder="Full Residential Address" className="p-3 bg-slate-50 rounded-lg w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="dir3-nin" className="text-[9px] font-black text-slate-400 uppercase block mb-1">NIN Number</label>
-                       <input id="dir3-nin" autoComplete="off" placeholder="NIN Number" className="p-3 bg-slate-50 rounded-lg w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="dir3-email" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Functional Email Address</label>
-                       <input id="dir3-email" type="email" autoComplete="email" placeholder="Email Address" className="p-3 bg-slate-50 rounded-lg w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="dir3-shares" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Amount of Share Held</label>
-                       <input id="dir3-shares" autoComplete="off" placeholder="Share Amount" className="p-3 bg-slate-50 rounded-lg w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="dir3-shareholder" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Is Shareholder?</label>
-                       <select id="dir3-shareholder" autoComplete="off" className="p-3 bg-slate-50 rounded-lg w-full">
-                         <option value="">Select</option>
-                         <option value="YES">YES</option>
-                         <option value="NO">NO</option>
-                       </select>
-                     </div>
-                     <div>
-                       <label htmlFor="dir3-director" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Is Director Too?</label>
-                       <select id="dir3-director" autoComplete="off" className="p-3 bg-slate-50 rounded-lg w-full">
-                         <option value="">Select</option>
-                         <option value="YES">YES</option>
-                         <option value="NO">NO</option>
-                       </select>
-                     </div>
-                  </div>
-               </div>
-            </div>
-
-            {/* Section 3: Turnover & Net Asset */}
-            <div className="space-y-4">
-               <h4 className="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2">(3) TURNOVER & NET ASSET</h4>
-               <p className="text-xs text-slate-500 italic">Give the figure of Net Asset & Turnover for each of the year you are filing for.</p>
-               
-               {/* TURNOVER */}
-               <div className="bg-slate-100 p-4 rounded-xl">
-                  <p className="text-xs font-bold text-slate-700 uppercase mb-3">TURNOVER: This is the total money that came into the company for 12 months.</p>
-                  <div className="grid md:grid-cols-3 gap-4">
-                     <div>
-                       <label htmlFor="turnover-year1" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Year 1</label>
-                       <input id="turnover-year1" type="number" autoComplete="off" placeholder="Turnover Year 1" className="p-3 rounded-lg border-none w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="turnover-year2" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Year 2</label>
-                       <input id="turnover-year2" type="number" autoComplete="off" placeholder="Turnover Year 2" className="p-3 rounded-lg border-none w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="turnover-year3" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Year 3</label>
-                       <input id="turnover-year3" type="number" autoComplete="off" placeholder="Turnover Year 3" className="p-3 rounded-lg border-none w-full" />
-                     </div>
-                  </div>
-               </div>
-
-               {/* NET ASSET */}
-              <div className="bg-slate-100 p-4 rounded-xl">
-                  <p className="text-xs font-bold text-slate-700 uppercase mb-3">NET ASSET: This is the total value of company's assets minus liabilities.</p>
-                  <div className="grid md:grid-cols-3 gap-4">
-                     <div>
-                       <label htmlFor="netasset-year1" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Year 1</label>
-                       <input id="netasset-year1" type="number" autoComplete="off" placeholder="Net Asset Year 1" className="p-3 rounded-lg border-none w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="netasset-year2" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Year 2</label>
-                       <input id="netasset-year2" type="number" autoComplete="off" placeholder="Net Asset Year 2" className="p-3 rounded-lg border-none w-full" />
-                     </div>
-                     <div>
-                       <label htmlFor="netasset-year3" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Year 3</label>
-                       <input id="netasset-year3" type="number" autoComplete="off" placeholder="Net Asset Year 3" className="p-3 rounded-lg border-none w-full" />
-                     </div>
-                  </div>
-               </div>
-            </div>
+             <div className="grid gap-4">
+                <div>
+                  <label htmlFor="ann-rc" className="text-[9px] font-black text-slate-400 uppercase block mb-1">RC or Business Number</label>
+                  <input id="ann-rc" autoComplete="off" placeholder="RC Number or Business Number" className="p-4 rounded-xl border-none font-bold w-full" required />
+                </div>
+                <div>
+                  <label htmlFor="ann-year" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Year of Return</label>
+                  <input id="ann-year" autoComplete="off" placeholder="Year of Return (e.g. 2024)" className="p-4 rounded-xl border-none font-bold w-full" required />
+                </div>
+                <div>
+                  <label htmlFor="ann-notes" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Additional Notes</label>
+                  <textarea id="ann-notes" autoComplete="off" placeholder="Any changes in Directors or Address?" className="p-4 rounded-xl border-none font-bold h-24 w-full" />
+                </div>
+             </div>
           </div>
         );
       case 'Copyright':
         return (
-          <div className="space-y-8">
-            {/* OWNER DETAILS */}
-            <div className="space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-200">
-               <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest border-l-4 border-cac-green pl-3">1. DETAILS OF OWNER</h3>
-               <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="copy-owner-name" className="text-[9px] font-black text-slate-400 uppercase block mb-1">FULL NAME *</label>
-                    <input id="copy-owner-name" autoComplete="name" placeholder="FULL NAME" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="copy-owner-address" className="text-[9px] font-black text-slate-400 uppercase block mb-1">ADDRESS *</label>
-                    <input id="copy-owner-address" autoComplete="street-address" placeholder="ADDRESS" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="copy-owner-email" className="text-[9px] font-black text-slate-400 uppercase block mb-1">EMAIL *</label>
-                    <input id="copy-owner-email" type="email" autoComplete="email" placeholder="EMAIL" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="copy-owner-phone" className="text-[9px] font-black text-slate-400 uppercase block mb-1">PHONE NUMBER *</label>
-                    <input id="copy-owner-phone" autoComplete="tel" placeholder="PHONE NUMBER" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="copy-owner-dob" className="text-[9px] font-black text-slate-400 uppercase block mb-1">DATE OF BIRTH *</label>
-                    <input id="copy-owner-dob" type="date" autoComplete="bday" className="p-4 rounded-xl border-none font-bold w-full" required />
-                  </div>
-                  <div>
-                    <label htmlFor="copy-owner-nin" className="text-[9px] font-black text-slate-400 uppercase block mb-1"> VALID ID (NIN) *</label>
-                    <input id="copy-owner-nin" autoComplete="off" placeholder="VALID ID (NIN)" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-               </div>
-            </div>
-
-            {/* INTELLECTUAL PROPERTY DETAILS */}
-            <div className="space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-200">
-               <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest border-l-4 border-cac-green pl-3">2. DETAILS OF THE INTELLECTUAL PROPERTY</h3>
-               <div className="grid gap-4">
-                  <div>
-                    <label htmlFor="copy-ip-type" className="text-[9px] font-black text-slate-400 uppercase block mb-1">TYPE *</label>
-                    <select id="copy-ip-type" autoComplete="off" className="p-4 rounded-xl border-none font-bold w-full uppercase" required>
-                      <option value="">SELECT TYPE</option>
-                      <option value="LITERARY WORK">LITERARY WORK</option>
-                      <option value="ARTISTIC WORK">ARTISTIC WORK</option>
-                      <option value="MUSICAL WORK">MUSICAL WORK</option>
-                      <option value="AUDIOVISUAL WORK">AUDIOVISUAL WORK</option>
-                      <option value="SOUND RECORDING">SOUND RECORDING</option>
-                      <option value="BROADCAST">BROADCAST</option>
-                      <option value="COMPUTER PROGRAM">COMPUTER PROGRAM</option>
-                      <option value="PHOTOGRAPH">PHOTOGRAPH</option>
-                      <option value="DATABASE">DATABASE</option>
-                      <option value="OTHER">OTHER</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="copy-title" className="text-[9px] font-black text-slate-400 uppercase block mb-1">TITLE OF WORK *</label>
-                    <input id="copy-title" autoComplete="off" placeholder="TITLE OF WORK" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="copy-date-production" className="text-[9px] font-black text-slate-400 uppercase block mb-1">DATE OF PRODUCTION *</label>
-                    <input id="copy-date-production" type="date" autoComplete="off" className="p-4 rounded-xl border-none font-bold w-full" required />
-                  </div>
-                  <div>
-                    <label htmlFor="copy-storage" className="text-[9px] font-black text-slate-400 uppercase block mb-1">WHERE IS IT CURRENTLY STORED? *</label>
-                    <input id="copy-storage" autoComplete="off" placeholder="WHERE IS IT CURRENTLY STORED?" className="p-4 rounded-xl border-none font-bold w-full uppercase" required />
-                  </div>
-                  <div>
-                    <label htmlFor="copy-description" className="text-[9px] font-black text-slate-400 uppercase block mb-1">DESCRIPTION OF WORK *</label>
-                    <textarea id="copy-description" autoComplete="off" placeholder="PROVIDE A DETAILED DESCRIPTION OF THE INTELLECTUAL PROPERTY" className="w-full p-4 rounded-xl border-none font-bold h-32 uppercase" required></textarea>
-                  </div>
-               </div>
-            </div>
-
-            {/* PROOF OF OWNERSHIP */}
-            <div className="space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-200">
-               <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest border-l-4 border-cac-green pl-3">3. PROOF OF OWNERSHIP</h3>
-              <div>
-                <label htmlFor="copy-ownership-proof" className="text-[9px] font-black text-slate-400 uppercase block mb-1">PROOF OF OWNERSHIP (IF YOU'RE NOT THE CREATOR) *</label>
-                <select id="copy-ownership-proof" autoComplete="off" className="p-4 rounded-xl border-none font-bold w-full uppercase" required>
-                  <option value="">SELECT PROOF OF OWNERSHIP</option>
-                  <option value="I AM THE ORIGINAL CREATOR">I AM THE ORIGINAL CREATOR</option>
-                  <option value="ASSIGNMENT DOCUMENT">ASSIGNMENT DOCUMENT</option>
-                  <option value="TRANSFER DOCUMENT">TRANSFER DOCUMENT</option>
-                  <option value="COMMISSIONED WORK DOCUMENT">COMMISSIONED WORK DOCUMENT</option>
-                  <option value="LICENSE AGREEMENT">LICENSE AGREEMENT</option>
-                  <option value="OTHER">OTHER</option>
-                </select>
-              </div>
-            </div>
-
-            {/* REQUIRED DOCUMENTS UPLOAD */}
-            <div className="space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-200">
-               <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest border-l-4 border-cac-green pl-3">4. REQUIRED DOCUMENTS</h3>
-               <div className="space-y-4">
-                 <p className="text-[9px] font-bold text-slate-500 uppercase">PLEASE UPLOAD THE FOLLOWING DOCUMENTS:</p>
-                 <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-slate-400 block">TWO COPIES OF THE WORK (DIGITAL OR PHYSICAL) *</label>
-                      <div className="flex flex-wrap gap-2">
-                        <label className="w-20 h-20 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all">
-                          <Upload className="text-slate-400" size={20} />
-                          <span className="text-[6px] font-black mt-1">UPLOAD</span>
-                          <input type="file" className="hidden" accept="image/*,.pdf" onChange={(e) => handleFileChange(e, 'Copyright Work Copy')} />
-                        </label>
-                        {previews['Copyright Work Copy']?.map((src, index) => (
-                          <div key={index} className="relative w-20 h-20 group">
-                            <img src={src} alt="preview" className="w-full h-full object-cover rounded-xl border-2 border-cac-green" />
-                            <button onClick={(e) => removeFile(e, 'Copyright Work Copy', index)} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:scale-110"><X size={12}/></button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-slate-400 block">OWNER'S VALID ID (NIN SLIP) *</label>
-                      <div className="flex flex-wrap gap-2">
-                        <label className="w-20 h-20 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all">
-                          <Upload className="text-slate-400" size={20} />
-                          <span className="text-[6px] font-black mt-1">UPLOAD</span>
-                          <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'Copyright Owner ID')} />
-                        </label>
-                        {previews['Copyright Owner ID']?.map((src, index) => (
-                          <div key={index} className="relative w-20 h-20 group">
-                            <img src={src} alt="preview" className="w-full h-full object-cover rounded-xl border-2 border-cac-green" />
-                            <button onClick={(e) => removeFile(e, 'Copyright Owner ID', index)} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:scale-110"><X size={12}/></button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                 </div>
-              </div>
-            </div>
+          <div className="space-y-6 p-6 bg-slate-50 rounded-3xl border border-slate-200">
+             <h3 className="font-black text-cac-blue uppercase text-xs tracking-widest">Copyright Registration</h3>
+             <div className="grid gap-4">
+                <div>
+                  <label htmlFor="copy-title" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Work Title</label>
+                  <input id="copy-title" autoComplete="off" placeholder="Title of the Work" className="p-4 rounded-xl border-none font-bold w-full" required />
+                </div>
+                <div>
+                  <label htmlFor="copy-type" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Type of Work</label>
+                  <select id="copy-type" autoComplete="off" className="p-4 rounded-xl border-none font-bold w-full">
+                     <option value="">Select Work Type</option>
+                     <option value="Literary">Literary Work</option>
+                     <option value="Artistic">Artistic Work</option>
+                     <option value="Musical">Musical Work</option>
+                     <option value="Audiovisual">Audiovisual Work</option>
+                     <option value="Sound Recording">Sound Recording</option>
+                     <option value="Broadcast">Broadcast</option>
+                     <option value="Computer Program">Computer Program</option>
+                     <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="copy-author-name" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Author's Full Name</label>
+                  <input id="copy-author-name" autoComplete="name" placeholder="Author's Full Name" className="p-4 rounded-xl border-none font-bold w-full" required />
+                </div>
+                <div>
+                  <label htmlFor="copy-author-address" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Author's Address</label>
+                  <textarea id="copy-author-address" autoComplete="address" placeholder="Author's Complete Address" className="p-4 rounded-xl border-none font-bold h-20 w-full" required />
+                </div>
+                <div>
+                  <label htmlFor="copy-ownership-proof" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Proof of Ownership (if not the creator)</label>
+                  <input id="copy-ownership-proof" autoComplete="off" placeholder="Assignment/Transfer Document Details" className="p-4 rounded-xl border-none font-bold w-full" />
+                </div>
+                <div>
+                  <label htmlFor="copy-year" className="text-[9px] font-black text-slate-400 uppercase block mb-1">Year of Creation/Publication</label>
+                  <input id="copy-year" type="number" autoComplete="off" placeholder="Year (e.g. 2024)" className="p-4 rounded-xl border-none font-bold w-full" required />
+                </div>
+             </div>
+             <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                <p className="text-[10px] font-black text-blue-700 uppercase mb-2">Required Documents:</p>
+                <ul className="text-[9px] text-blue-600 space-y-1">
+                   <li>• Two copies of the work (digital or physical)</li>
+                   <li>• Author's details (name, address)</li>
+                   <li>• Proof of ownership (if you're not the creator)</li>
+                </ul>
+             </div>
           </div>
         );
       default: return null;

@@ -2,7 +2,6 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// 1. LAYOUT & UTILITIES (Keep static - needed on every page)
 import Navbar from './components/Navbar.jsx';
 import Footer from './components/Footer.jsx';
 import ScrollToTop from './components/ScrollToTop.jsx';
@@ -10,7 +9,6 @@ import FloatingContact from './components/FloatingContact.jsx';
 import SkipLink from './components/SkipLink.jsx';
 import LoadingScreen from './components/LoadingScreen.jsx';
 
-// 2. HOMEPAGE SECTIONS (Keep static - needed on homepage)
 import HeroSlider from './components/HeroSlider.jsx';
 import AgentIntro from './components/AgentIntro.jsx';
 import ServicesSection from './components/ServicesSection.jsx';
@@ -23,7 +21,6 @@ import FAQ from './components/FAQ.jsx';
 import LegitimacyHub from './components/LegitimacyHub.jsx';
 import NigeriaSymbol from './components/NigeriaSymbol.jsx';
 
-// 3. PAGES (Lazy load - only load when needed)
 const Registration = lazy(() => import('./pages/Registration.jsx'));
 const RegistrationWizard = lazy(() => import('./pages/RegistrationWizard.jsx'));
 const Services = lazy(() => import('./pages/Services.jsx'));
@@ -32,11 +29,9 @@ const NewsPage = lazy(() => import('./pages/NewsPage.jsx'));
 const AdminLogin = lazy(() => import('./pages/AdminLogin.jsx'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard.jsx'));
 
-// 4. RESPONSIVE HOOKS
 import { useIsMobile, useIsDesktop, premiumEasings, pageTransitionVariants } from './hooks/useResponsiveMotion.js';
 import { useAutoScrollSections, enhancedAnimationVariants, useScrollAnimation } from './hooks/useEnhancedAnimations.js';
 
-// Loading fallback component
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center">
     <LoadingScreen />
@@ -49,7 +44,6 @@ function AppContent() {
   const isMobile = useIsMobile();
   const isDesktop = useIsDesktop();
 
-  // Define sections for auto-scroll
   const sections = [
     { id: 'hero-slider', name: 'Hero' },
     { id: 'agent-intro', name: 'About' },
@@ -57,25 +51,22 @@ function AppContent() {
     { id: 'how-it-works', name: 'Process' },
     { id: 'proof-of-delivery', name: 'Proof' },
     { id: 'why-choose-us', name: 'Why Choose Us' },
-    { id: 'news-section', name: 'News' },
     { id: 'testimonials', name: 'Testimonials' },
+    { id: 'news-section', name: 'News' },
     { id: 'faq', name: 'FAQ' },
     { id: 'legitimacy-hub', name: 'Legitimacy' }
   ];
 
   const { currentSection, isAutoScrolling, scrollToSection, toggleAutoScroll } = useAutoScrollSections(sections, true, 10000);
 
-  // Responsive animation settings
   const getAnimationSettings = (mobileDuration = 0.4, desktopDuration = 0.6, mobileDelay = 0.05, desktopDelay = 0.1) => ({
     duration: isMobile ? mobileDuration : desktopDuration,
     delay: isMobile ? mobileDelay : desktopDelay,
     ease: premiumEasings.elegant
   });
 
-  // Get responsive offset values
   const getOffset = (mobile = 15, desktop = 30) => isMobile ? mobile : desktop;
 
-  // Page transition settings
   const getPageTransition = () => isMobile 
     ? pageTransitionVariants.pageIn(false) 
     : pageTransitionVariants.pageIn(false);
@@ -95,7 +86,6 @@ function AppContent() {
         <AnimatePresence>
           <Suspense fallback={<PageLoader />}>
             <Routes location={location} key={location.pathname}>
-              {/* HOME ROUTE */}
               <Route path="/" element={
                 <motion.div
                   initial={{ opacity: 0, y: isMobile ? 15 : 20 }}
@@ -104,7 +94,6 @@ function AppContent() {
                   transition={{ duration: isMobile ? 0.3 : 0.5, ease: premiumEasings.elegant }}
                 >
                   <div className="flex flex-col">
-                    {/* Auto-scroll indicator */}
                     <motion.div
                       initial={{ opacity: 0, y: -20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -234,7 +223,6 @@ function AppContent() {
                   </div>
                 </motion.div>
               } />
-              {/* REGISTRATION ROUTES */}
               <Route path="/register/:selectedService" element={
                 <motion.div
                   initial={{ opacity: 0, x: isMobile ? 30 : 100 }}
@@ -255,7 +243,6 @@ function AppContent() {
                   <RegistrationWizard />
                 </motion.div>
               } />
-              {/* SERVICES ROUTE - Full Services Listing */}
               <Route path="/services" element={
                 <motion.div
                   initial={{ opacity: 0, y: isMobile ? 20 : 30 }}
@@ -266,7 +253,6 @@ function AppContent() {
                   <Services />
                 </motion.div>
               } />
-              {/* APPLY ROUTE - Service Application Form */}
               <Route path="/apply" element={
                 <motion.div
                   initial={{ opacity: 0, x: isMobile ? 30 : 100 }}
@@ -277,7 +263,6 @@ function AppContent() {
                   <Apply />
                 </motion.div>
               } />
-              {/* OTHER PAGES */}
               <Route path="/news" element={
                 <motion.div
                   initial={{ opacity: 0, scale: isMobile ? 0.98 : 0.95 }}
@@ -310,7 +295,6 @@ function AppContent() {
                   </div>
                 </motion.div>
               } />
-              {/* 404 FALLBACK */}
               <Route path="*" element={
                 <motion.div
                   initial={{ opacity: 0, scale: isMobile ? 0.9 : 0.8 }}
@@ -343,4 +327,3 @@ function App() {
 }
 
 export default App;
-
