@@ -90,13 +90,13 @@ const ServicesSection = () => {
 
             // Features based on service name
             const features = {
-              'Business Name': ['CAC Certificate', 'BN Number', '72 Hours Processing'],
-              'Company Registration': ['Certificate of Incorporation', 'RC Number', 'Memorandum & Articles', '5-14 Working Days'],
-              'Company Name': ['Certificate of Incorporation', 'RC Number', 'Memorandum & Articles', '5-14 Working Days'],
-              'NGO Registration': ['NGO Certificate', 'Trustees Registration', 'Full Compliance', '1-2 Months'],
-              'Trademark': ['Brand Protection', '10 Years Validity', 'Legal Certificate', '1 Month'],
-              'Export Licence': ['NEPC Registration', 'Export Documentation', 'International Trade', '2-4 Working Days'],
-              'Copyright': ['IP Protection', 'Legal Rights', 'Lifetime Validity', '8-14 Working Days'],
+              'Business Name': ['CAC Certificate', 'BN Number', '1-3 Days Processing'],
+              'Company Registration': ['Certificate of Incorporation', 'RC Number', 'Memorandum & Articles'],
+              'Company Name': ['Certificate of Incorporation', 'RC Number', 'Memorandum & Articles'],
+              'NGO Registration': ['NGO Certificate', 'Trustees Registration', 'Full Compliance'],
+              'Trademark': ['Brand Protection', '10 Years Validity', 'Legal Certificate'],
+              'Export Licence': ['NEPC Registration', 'Export Documentation', 'International Trade'],
+              'Copyright': ['IP Protection', 'Legal Rights', 'Lifetime Validity'],
               'Annual Returns': ['Legal Compliance', 'Annual Filing', '24-48 Hours'],
             };
 

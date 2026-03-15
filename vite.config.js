@@ -8,9 +8,6 @@ export default defineConfig({
     port: 3000,
     open: true,
     cors: true,
-    hmr: {
-      port: 3000
-    },
     proxy: {
       '/supabase': {
         target: 'https://oohabvgbrzrewwrekkfy.supabase.co',

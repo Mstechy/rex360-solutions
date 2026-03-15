@@ -37,7 +37,7 @@ const serviceDetails = {
     features: [
       'Official CAC Certificate',
       'Unique BN Number',
-      '72 Hours Processing',
+      '1-3 Days Processing',
       'Digital & Physical Certificate',
       'Full Documentation',
     ],
@@ -60,7 +60,6 @@ const serviceDetails = {
       'Share Certificates',
       'CAC Status Report',
       'Company Seal',
-      '5-14 Working Days Processing',
     ],
     requirements: [
       'Directors\' Valid ID Cards',
@@ -81,7 +80,6 @@ const serviceDetails = {
       'Full Legal Compliance',
       'Tax Exemption Eligibility',
       'CAC Status Report',
-      '1-2 Months Processing',
     ],
     requirements: [
       'Trustees\' Valid ID Cards',
@@ -102,7 +100,6 @@ const serviceDetails = {
       'Legal Certificate',
       'Nationwide Protection',
       'Renewal Support',
-      '1 Month Processing',
     ],
     requirements: [
       'Trademark Name/Logo',
@@ -123,7 +120,6 @@ const serviceDetails = {
       'Legal Compliance',
       'Export Certificate',
       'Business Advisory',
-      '2-4 Working Days Processing',
     ],
     requirements: [
       'CAC Registration Number',
@@ -144,7 +140,6 @@ const serviceDetails = {
       'Anti-Piracy Protection',
       'Commercial Rights',
       'Transfer Rights',
-      '8-14 Working Days Processing',
     ],
     requirements: [
       'Completed Application Form',
@@ -289,7 +284,7 @@ const ServiceRow = ({ service, index }) => {
         <div className="mt-6 pt-6 border-t border-gray-200">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Clock size={16} style={{ color: '#D4AF37' }} />
-            <span>Processing times shown above</span>
+            <span>Processing Time: 1-5 Business Days</span>
           </div>
         </div>
       </div>
