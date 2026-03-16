@@ -49,23 +49,7 @@ function AppContent() {
   const isMobile = useIsMobile();
   const isDesktop = useIsDesktop();
 
-  // Define sections for auto-scroll
-  const sections = [
-    { id: 'hero-slider', name: 'Hero' },
-    { id: 'agent-intro', name: 'About' },
-    { id: 'services-section', name: 'Services' },
-    { id: 'how-it-works', name: 'Process' },
-    { id: 'proof-of-delivery', name: 'Proof' },
-    { id: 'why-choose-us', name: 'Why Choose Us' },
-    { id: 'news-section', name: 'News' },
-    { id: 'testimonials', name: 'Testimonials' },
-    { id: 'faq', name: 'FAQ' },
-    { id: 'legitimacy-hub', name: 'Legitimacy' }
-  ];
-
-  const { currentSection, isAutoScrolling, scrollToSection, toggleAutoScroll } = useAutoScrollSections(sections, true, 10000);
-
-  // Responsive animation settings
+  // Responsive animation settings (auto-scroll disabled)
   const getAnimationSettings = (mobileDuration = 0.4, desktopDuration = 0.6, mobileDelay = 0.05, desktopDelay = 0.1) => ({
     duration: isMobile ? mobileDuration : desktopDuration,
     delay: isMobile ? mobileDelay : desktopDelay,
@@ -104,21 +88,7 @@ function AppContent() {
                   transition={{ duration: isMobile ? 0.3 : 0.5, ease: premiumEasings.elegant }}
                 >
                   <div className="flex flex-col">
-                    {/* Auto-scroll indicator */}
-                    <motion.div
-                      initial={{ opacity: 0, y: -20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1, duration: 0.5 }}
-                      className="fixed top-24 right-4 z-50 bg-white/90 backdrop-blur-md rounded-full p-2 shadow-lg"
-                    >
-                      <button
-                        onClick={toggleAutoScroll}
-                        className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                          isAutoScrolling ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
-                        }`}
-                        title={isAutoScrolling ? 'Disable auto-scroll' : 'Enable auto-scroll'}
-                      />
-                    </motion.div>
+                    {/* Auto-scroll removed - manual scroll only */}
 
                     <motion.div
                       id="hero-slider"
