@@ -37,7 +37,7 @@ const serviceDetails = {
     features: [
       'Official CAC Certificate',
       'Unique BN Number',
-      '1-3 Days Processing',
+      '72hrs',
       'Digital & Physical Certificate',
       'Full Documentation',
     ],
@@ -56,7 +56,7 @@ const serviceDetails = {
     features: [
       'Certificate of Incorporation',
       'Unique RC Number',
-      'Memorandum & Articles of Association',
+      '5 - 14 working days',
       'Share Certificates',
       'CAC Status Report',
       'Company Seal',
@@ -76,7 +76,7 @@ const serviceDetails = {
     features: [
       'NGO Certificate',
       'Trustees Registration',
-      'Constitution Document',
+      '1-2 month',
       'Full Legal Compliance',
       'Tax Exemption Eligibility',
       'CAC Status Report',
@@ -96,7 +96,7 @@ const serviceDetails = {
     features: [
       'Brand Name Protection',
       'Logo Protection',
-      '10 Years Validity',
+      '1 month',
       'Legal Certificate',
       'Nationwide Protection',
       'Renewal Support',
@@ -116,7 +116,7 @@ const serviceDetails = {
     features: [
       'NEPC Registration',
       'Export Documentation',
-      'International Trade Ready',
+      '2-4 working days',
       'Legal Compliance',
       'Export Certificate',
       'Business Advisory',
@@ -130,13 +130,14 @@ const serviceDetails = {
       'Valid ID & Application Letter',
     ],
   },
+
   'Copyright': {
     title: 'Copyright Registration',
     description: 'Protect your creative works, music, software, books, and intellectual property. Secure your rights with official copyright registration.',
     features: [
       'IP Protection',
       'Lifetime Validity',
-      'Legal Rights Certificate',
+      '8- 14 working days',
       'Anti-Piracy Protection',
       'Commercial Rights',
       'Transfer Rights',
@@ -256,7 +257,7 @@ const ServiceRow = ({ service, index }) => {
         </div>
       </div>
 
-      {/* Requirements Side */}
+        {/* Requirements Side */}
       <div
         className={`rounded-2xl p-6 lg:p-8 border shadow-sm ${
           index % 2 === 1 ? 'lg:order-1' : ''
@@ -284,7 +285,7 @@ const ServiceRow = ({ service, index }) => {
         <div className="mt-6 pt-6 border-t border-gray-200">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Clock size={16} style={{ color: '#D4AF37' }} />
-            <span>Processing Time: 1-5 Business Days</span>
+            <span>Processing times shown above</span>
           </div>
         </div>
       </div>

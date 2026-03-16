@@ -90,13 +90,13 @@ const ServicesSection = () => {
 
             // Features based on service name
             const features = {
-              'Business Name': ['CAC Certificate', 'BN Number', '1-3 Days Processing'],
-              'Company Registration': ['Certificate of Incorporation', 'RC Number', 'Memorandum & Articles'],
-              'Company Name': ['Certificate of Incorporation', 'RC Number', 'Memorandum & Articles'],
-              'NGO Registration': ['NGO Certificate', 'Trustees Registration', 'Full Compliance'],
-              'Trademark': ['Brand Protection', '10 Years Validity', 'Legal Certificate'],
-              'Export Licence': ['NEPC Registration', 'Export Documentation', 'International Trade'],
-              'Copyright': ['IP Protection', 'Legal Rights', 'Lifetime Validity'],
+              'Business Name': ['CAC Certificate', 'BN Number', '72hrs'],
+              'Company Registration': ['Certificate of Incorporation', 'RC Number', '5 - 14 working days'],
+              'Company Name': ['Certificate of Incorporation', 'RC Number', '5 - 14 working days'],
+              'NGO Registration': ['NGO Certificate', 'Trustees Registration', '1-2 month'],
+              'Trademark': ['Brand Protection', '1 month', 'Legal Certificate'],
+              'Export Licence': ['NEPC Registration', 'Export Documentation', '2-4 working days'],
+              'Copyright': ['IP Protection', 'Legal Rights', '8- 14 working days'],
               'Annual Returns': ['Legal Compliance', 'Annual Filing', '24-48 Hours'],
             };
 
@@ -125,7 +125,7 @@ const ServicesSection = () => {
                 whileTap={{ scale: 0.98 }}
               >
                 <Link
-                  to={`/services?service=${encodeURIComponent(service.name)}`}
+to={`/services?service=${encodeURIComponent(service.name)}`}
                   className="group bg-white rounded-2xl p-6 lg:p-8 border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full overflow-hidden relative"
                 >
                   {/* Animated background gradient */}
@@ -184,21 +184,33 @@ const ServicesSection = () => {
                       viewport={{ once: true }}
                     >
                       {serviceFeatures.map((feature, i) => (
-                        <motion.span
+                        <motion.div
                           key={i}
-                          className="text-xs px-3 py-1 bg-gray-100 rounded-full text-gray-700"
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          whileInView={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: 0.4 + (i * 0.1), duration: 0.3 }}
-                          whileHover={{
-                            scale: 1.05,
-                            backgroundColor: "#dbeafe",
-                            transition: { duration: 0.2 }
-                          }}
-                          viewport={{ once: true }}
+                          className="group relative inline-block"
                         >
-                          {feature}
-                        </motion.span>
+                          <motion.span
+                            className="text-xs px-3 py-1 bg-gray-100 rounded-full text-gray-700 inline-block cursor-pointer"
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            whileInView={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.4 + (i * 0.1), duration: 0.3 }}
+                            whileHover={{
+                              scale: 1.05,
+                              backgroundColor: "#dbeafe",
+                              transition: { duration: 0.2 }
+                            }}
+                            viewport={{ once: true }}
+                          >
+                            {feature}
+                          </motion.span>
+                          <motion.div
+                            className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 pointer-events-none shadow-lg"
+                            initial={{ scale: 0 }}
+                            whileHover={{ scale: 1 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            {service.name} Processing
+                          </motion.div>
+                        </motion.div>
                       ))}
                     </motion.div>
 
