@@ -987,14 +987,21 @@ const Registration = () => {
 
           <div className="lg:w-2/3">
           <div className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100">
-            <div className="bg-cac-blue p-8 text-white flex justify-between items-center">
-              <div>
+    <div className="bg-gradient-to-r from-cac-blue to-slate-800 p-8 text-white flex justify-between items-center relative overflow-hidden">
+              {/* Progress Bar Background */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+              
+              <div className="relative z-10">
                  <h1 className="text-2xl font-black uppercase italic tracking-tighter leading-none">{serviceType}</h1>
                  <p className="text-[10px] text-blue-200 font-bold uppercase mt-2">Official CAC Accreditation Filing</p>
+                 <div className="flex items-center gap-2 mt-1">
+                   <div className="w-2 h-2 bg-cac-green rounded-full animate-pulse"></div>
+                   <span className="text-[8px] uppercase tracking-widest font-bold">Secure & Fast</span>
+                 </div>
               </div>
-              <div className="text-right">
-                 <span className="block text-[10px] opacity-60 font-black uppercase">Filing Fee</span>
-                 <span className="text-2xl font-black text-cac-green">₦{currentPrice.toLocaleString()}</span>
+              <div className="text-right relative z-10">
+                 <span className="block text-[10px] opacity-70 font-black uppercase">Filing Fee</span>
+                 <span className="text-2xl md:text-3xl font-black text-cac-green drop-shadow-lg">₦{currentPrice.toLocaleString()}</span>
               </div>
             </div>
 
