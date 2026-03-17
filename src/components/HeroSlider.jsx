@@ -34,10 +34,11 @@ const HeroSlider = () => {
           setError(error.message);
           setSlides([]);
         } else if (data && data.length > 0) {
-          // Show all slides from database, even those without titles
-          setSlides(data);
+          // Limit to 5 slides max for performance (smart improvement)
+          const limitedSlides = data.slice(0, 5);
+          setSlides(limitedSlides);
           setError(null);
-          console.log('✅ Connected to Supabase - Auto-sliding enabled with', data.length, 'slides from database');
+          console.log('✅ Connected to Supabase - Using', limitedSlides.length, 'slides (limited to 5 for perf)');
         } else {
           console.log('⚠️ No slides found in database - Please add slides manually to hero_slides table');
           setSlides([]);
@@ -139,13 +140,13 @@ const HeroSlider = () => {
             aria-hidden={index !== current}
           >
             {/* 2. THE PICTURE: Separated from the text layer for clarity */}
-            <img
-              src={slide.image_url}
-              alt={slide.title || `Slide ${index + 1}: ${slide.subtitle || 'REX360 Solutions service'}`}
-              className="w-full h-full object-cover scale-105"
-              loading="eager"
-              crossOrigin="anonymous"
-            />
+              <img
+                src={slide.image_url}
+                alt={slide.title || `Slide ${index + 1}: ${slide.subtitle || 'REX360 Solutions service'}`}
+                className="w-full h-full object-cover scale-105"
+                loading={index === current ? "eager" : "lazy"}
+                crossOrigin="anonymous"
+              />
 
             <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-black/60 flex flex-col items-center justify-center text-center p-4 sm:p-6 z-20">
               
