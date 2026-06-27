@@ -4,7 +4,7 @@ import { CheckCircle, Award, Clock, Users, Headphones, Shield } from "lucide-rea
 const reasons = [
   {
     icon: CheckCircle,
-    title: "100% Success Rate",
+    title: "98% Success Rate",
     description: "We guarantee successful registration of your business with CAC or your money back.",
   },
   {

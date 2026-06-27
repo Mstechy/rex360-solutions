@@ -8,7 +8,12 @@ const FAQ = () => {
     { q: "How long does Business Name registration take?", a: "Typically, it takes 3-5 working days after payment and document submission." },
     { q: "What IDs are accepted for CAC registration?", a: "We accept National ID (NIN Slip), International Passport, Driver's License, or Voter's Card." },
     { q: "Is the payment secure?", a: "Yes, all payments are processed through Paystack, Nigeria's most secure payment gateway." },
-    { q: "Will I get a certificate?", a: "Yes, once registration is complete, your official CAC certificate will be sent to your email and WhatsApp." }
+    { q: "Will I get a certificate?", a: "Yes, once registration is complete, your official CAC certificate will be sent to your email and WhatsApp." },
+    { q: "Can I register my business from any state in Nigeria?", a: "Yes. We register businesses for clients across all 36 states and FCT Abuja. Everything is done online — no physical visit needed." },
+    { q: "What is the difference between Business Name and Limited Company?", a: "A Business Name (sole proprietorship) is cheaper and faster but has no separate legal identity. A Limited Company (LTD) is a separate legal entity, better for investors and contracts." },
+    { q: "Do you offer post-registration services?", a: "Yes. We offer Annual Returns filing, Trademark registration, Copyright registration, and Export Licence processing after your initial registration." },
+    { q: "How do I pay for the service?", a: "We accept bank transfers, online payments, and all major payment channels. You will receive payment details after submitting your order." },
+    { q: "Will I get a physical certificate?", a: "CAC certificates are issued digitally as official PDF documents. These are legally valid and accepted by all banks and institutions." }
   ];
 
   return (

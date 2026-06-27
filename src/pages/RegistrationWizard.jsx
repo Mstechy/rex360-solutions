@@ -135,6 +135,15 @@ const RegistrationWizard = ({ preSelectedService = null }) => {
   // Determine service: preSelectedService (from Apply) > selectedService (from URL params) > default
   const initialService = preSelectedService?.title || selectedService || 'Business Name';
 
+  // Update meta tags for SEO
+  useEffect(() => {
+    document.title = "CAC Business Registration | REX360 Solutions";
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Start your CAC registration now. Quick, easy, and secure business registration process with REX360 Solutions.');
+    }
+  }, []);
+
   const [currentStep, setCurrentStep] = useState(1);
   const [serviceType, setServiceType] = useState(initialService);
   const [prices, setPrices] = useState({});

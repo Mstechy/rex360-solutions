@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -48,6 +48,39 @@ function AppContent() {
   const isAdminDashboard = location.pathname === '/admin/dashboard';
   const isMobile = useIsMobile();
   const isDesktop = useIsDesktop();
+
+  // Update meta tags for homepage
+  useEffect(() => {
+    if (location.pathname === '/') {
+      document.title = "REX360 Solutions | CAC Accredited Agency Nigeria | Business Registration Lagos";
+      const metaDescription = document.querySelector('meta[name="description"]');
+      if (metaDescription) {
+        metaDescription.setAttribute('content', 'REX360 Solutions is a CAC accredited agency in Nigeria. Register Business Name, Company, NGO, Trademark with fast 24-48hr processing and verified CAC support.');
+      }
+      
+      // Add JSON-LD schema for homepage
+      const existingSchema = document.querySelector('script[type="application/ld+json"]');
+      if (existingSchema) {
+        existingSchema.innerHTML = JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "LocalBusiness",
+          "name": "REX360 Solutions",
+          "description": "Accredited CAC Agent — Business Registration Nigeria",
+          "url": "https://rex360solutions.com",
+          "telephone": "+2349048349548",
+          "email": "info@rex360solutions.com",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Lagos",
+            "addressCountry": "NG"
+          },
+          "openingHours": "Mo-Su 08:00-20:00",
+          "priceRange": "₦₦",
+          "image": "https://rex360solutions.com/logo.png"
+        });
+      }
+    }
+  }, [location.pathname]);
 
   // Responsive animation settings (auto-scroll disabled)
   const getAnimationSettings = (mobileDuration = 0.4, desktopDuration = 0.6, mobileDelay = 0.05, desktopDelay = 0.1) => ({

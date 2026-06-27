@@ -203,11 +203,11 @@ const HowItWorks = () => {
             <p className="text-gray-600 text-sm md:text-base font-medium mt-2">Companies Registered</p>
           </div>
           <div className="text-center border-l border-r border-gray-200">
-            <p className="text-3xl md:text-4xl font-black text-cac-blue">24hrs</p>
+            <p className="text-3xl md:text-4xl font-black text-cac-blue">24-48hrs</p>
             <p className="text-gray-600 text-sm md:text-base font-medium mt-2">Average Processing</p>
           </div>
           <div className="text-center">
-            <p className="text-3xl md:text-4xl font-black text-amber-500">100%</p>
+            <p className="text-3xl md:text-4xl font-black text-amber-500">98%</p>
             <p className="text-gray-600 text-sm md:text-base font-medium mt-2">Success Rate</p>
           </div>
         </motion.div>

@@ -84,7 +84,7 @@ const HeroSlider = () => {
       role="banner"
     >
       {/* 1. THE CONTAINER: Improved responsive height and sizing */}
-      <div className="max-w-[1100px] mx-auto relative overflow-hidden rounded-[24px] md:rounded-[40px] shadow-2xl h-[70vh] sm:h-[75vh] min-h-[400px] sm:min-h-[500px] md:min-h-[600px] w-full bg-slate-800">
+      <div className="max-w-[1100px] mx-auto relative overflow-hidden rounded-[24px] md:rounded-[40px] shadow-2xl h-[60vh] md:h-[70vh] lg:h-[100vh] min-h-[400px] sm:min-h-[500px] md:min-h-[600px] w-full bg-slate-800">
 
         {/* Fallback background when no slides are available */}
         {slides.length === 0 && (
@@ -184,7 +184,7 @@ const HeroSlider = () => {
               <div className="mt-6 sm:mt-8 grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4 max-w-2xl mx-auto px-4">
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-3 text-center">
                   <div className="text-white font-bold text-xs sm:text-sm uppercase tracking-wide leading-tight">Business Name</div>
-                  <div className="text-white/80 text-[10px] sm:text-xs">From ₦15,000</div>
+                  <div className="text-white/80 text-[10px] sm:text-xs">From ₦35,000</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-3 text-center">
                   <div className="text-white font-bold text-xs sm:text-sm uppercase tracking-wide leading-tight">Company Reg</div>
@@ -216,7 +216,7 @@ const HeroSlider = () => {
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest whitespace-nowrap">100% Success Rate</span>
+                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest whitespace-nowrap">98% Success Rate</span>
                 </div>
               </div>
             </div>

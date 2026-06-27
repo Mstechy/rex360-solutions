@@ -13,6 +13,15 @@ const NewsPage = () => {
   const [currentNewsIndex, setCurrentNewsIndex] = useState(0); // State for current news index
   const navigate = useNavigate(); // 3. Initialize navigation
 
+  // Update meta tags for SEO
+  useEffect(() => {
+    document.title = "CAC News & Updates Nigeria | REX360 Solutions Blog";
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Latest CAC registration guidelines, business tips, and updates from Nigeria\'s trusted accredited CAC agent.');
+    }
+  }, []);
+
   // Navigation functions
   const nextNews = () => {
     setCurrentNewsIndex((prev) => (prev + 1) % news.length);
@@ -63,6 +72,7 @@ const NewsPage = () => {
 
       {/* 2. Sequential News Display */}
       <div className="max-w-5xl mx-auto px-6 py-16">
+        <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-12 tracking-tight">CAC News & Business Registration Updates</h1>
 
         {loading ? (
           <div className="text-center py-20">
@@ -122,10 +132,13 @@ const NewsPage = () => {
                       {news[currentNewsIndex].category || 'Official Update'}
                     </span>
                   </div>
-                  <p className="text-slate-600 leading-relaxed font-medium whitespace-pre-line text-lg">
+                  <p className="text-slate-600 leading-relaxed font-medium whitespace-pre-line text-lg mb-6">
+                    {news[currentNewsIndex].content.substring(0, 100)}...
+                  </p>
+                  <p className="text-slate-600 leading-relaxed font-medium whitespace-pre-line text-base mb-6">
                     {news[currentNewsIndex].content}
                   </p>
-                  <div className="flex items-center text-cac-blue font-black text-xs uppercase tracking-widest mt-6">
+                  <div className="flex items-center text-cac-blue font-black text-xs uppercase tracking-widest">
                     Verified Information <ArrowRight size={16} className="ml-2"/>
                   </div>
                 </div>

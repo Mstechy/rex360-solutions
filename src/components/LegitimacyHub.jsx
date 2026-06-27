@@ -137,19 +137,20 @@ const LegitimacyHub = () => {
                   </div>
                   <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full">
                     <FileText className="w-5 h-5 text-cac-green" />
-                    <span className="text-white text-sm font-semibold">1000+ Clients</span>
+                    <span className="text-white text-sm font-semibold">1000+ Businesses Registered</span>
                   </div>
                 </div>
 
                 {/* CTA Button */}
                 <button 
                   onClick={() => setShowModal(true)}
-                  className="inline-flex items-center gap-3 bg-cac-green hover:bg-emerald-600 text-white px-8 py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all"
+                  className="inline-flex items-center gap-3 bg-cac-green hover:bg-emerald-600 text-white px-8 py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all mb-4"
                 >
                   <FileText className="w-5 h-5" />
                   View Our Certificates
                   <ExternalLink className="w-4 h-4" />
                 </button>
+                <p className="text-blue-100 text-sm">CAC Accreditation verified and active since 2020</p>
               </div>
             </div>
 
@@ -175,7 +176,7 @@ const LegitimacyHub = () => {
               </div>
               <div className="text-center">
                 <p className="text-3xl md:text-4xl font-black text-white">
-                  <AnimatedCounter target={5} suffix="+" duration={1000} />
+                  <AnimatedCounter target={7} suffix="+" duration={1000} />
                 </p>
                 <p className="text-blue-200 text-sm">Years Experience</p>
               </div>

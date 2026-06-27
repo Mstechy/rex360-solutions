@@ -304,6 +304,15 @@ const Services = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Update meta tags for SEO
+  useEffect(() => {
+    document.title = "CAC Registration Services Nigeria | REX360 Solutions";
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Business Name ₦35,000 | Company ₦80,000 | NGO ₦120,000 | Trademark ₦50,000. Fast, legal CAC registration by accredited agent.');
+    }
+  }, []);
+
   useEffect(() => {
     const fetchServices = async () => {
       try {

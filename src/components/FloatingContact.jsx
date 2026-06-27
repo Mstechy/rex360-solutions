@@ -16,7 +16,7 @@ const FloatingContact = () => {
 
       {/* The WhatsApp Button */}
       <a 
-        href="https://wa.me/2349048349548" 
+        href="https://wa.me/2349048349548?text=Hello%20REX360%20Solutions%2C%20I%20want%20to%20register%20my%20business.%20Please%20guide%20me%20on%20the%20process%20and%20pricing." 
         target="_blank" 
         rel="noopener noreferrer"
         className="relative group"
@@ -30,7 +30,7 @@ const FloatingContact = () => {
         <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping duration-1000"></span>
         
         {/* 3. The Main Icon Button */}
-        <div className="relative z-10 bg-[#25D366] p-4 rounded-full shadow-[0_4px_20px_rgba(37,211,102,0.4)] text-white transform transition-all duration-300 hover:scale-110 hover:rotate-12 flex items-center justify-center">
+        <div className="relative z-10 bg-[#25D366] p-4 rounded-full shadow-[0_4px_20px_rgba(37,211,102,0.4)] text-white transform transition-all duration-300 hover:scale-110 hover:rotate-12 flex items-center justify-center w-16 h-16">
           <FaWhatsapp size={32} />
         </div>
 

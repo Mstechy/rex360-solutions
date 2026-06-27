@@ -326,6 +326,41 @@ const Registration = () => {
     }
   };
 
+  const verifyPaymentOnServer = async (reference, expectedAmount) => {
+    console.log('🔐 Verifying payment on server...', { reference, expectedAmount });
+
+    if (!reference) {
+      throw new Error('Missing payment reference for verification.');
+    }
+
+    try {
+      const response = await fetch('/api/verify-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reference, amount: expectedAmount })
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        console.error('❌ Payment verification endpoint returned error:', result);
+        throw new Error(result?.error || 'Payment verification failed on server.');
+      }
+
+      if (!result?.verified || result.verified.status !== 'success') {
+        console.error('❌ Payment verification response invalid:', result);
+        throw new Error('Payment could not be verified as successful.');
+      }
+
+      console.log('✅ Payment verified on server:', result.verified);
+      return result.verified;
+    } catch (err) {
+      console.error('💥 verifyPaymentOnServer error:', err);
+      throw err;
+    }
+  };
+
   // Paystack Config - Get public key from environment
   const paystackPublicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || '';
   
@@ -351,12 +386,13 @@ const Registration = () => {
         callback: function(response) {
           console.log('✅ Payment callback called:', response);
           setUploadStatus('uploading');
-          setStatusMessage('Processing your registration...');
+          setStatusMessage('Verifying payment...');
           
-          // Process the successful payment
           const paystackRef = response.reference || config.reference;
-          
-          saveToDatabase(paystackRef)
+          const paidAmount = response.amount || config.amount;
+
+          verifyPaymentOnServer(paystackRef, paidAmount)
+            .then(() => saveToDatabase(paystackRef))
             .then(() => {
               // Clear form silently
               setFiles({ "ID Card": [], "Signature": [], "Passport": [] });

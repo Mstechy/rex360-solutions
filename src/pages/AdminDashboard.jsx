@@ -69,6 +69,17 @@ const OrdersManager = ({ registrations, fetchData }) => {
     return docMatch && paymentMatch;
   });
 
+  const serviceCounts = registrations.reduce((acc, reg) => {
+    const service = reg.service_type || 'Unknown Service';
+    acc[service] = (acc[service] || 0) + 1;
+    return acc;
+  }, {});
+
+  const serviceCountEntries = Object.entries(serviceCounts).sort((a, b) => b[1] - a[1]);
+  const totalServiceTypes = serviceCountEntries.length;
+  const mostPopularService = serviceCountEntries[0]?.[0] || 'N/A';
+  const mostPopularServiceCount = serviceCountEntries[0]?.[1] || 0;
+
   const downloadClientForm = async (client) => {
     const formData = client.full_details || {};
 
@@ -252,6 +263,25 @@ const OrdersManager = ({ registrations, fetchData }) => {
           <button onClick={() => setPaymentFilter('pending')} className={`px-3 md:px-4 py-2 rounded-lg font-bold text-xs transition-all ${paymentFilter === 'pending' ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
             ⏳ Unpaid ({registrations.filter(r => r.payment_status !== 'paid').length})
           </button>
+        </div>
+      </div>
+
+      {/* Service Interest Indicator */}
+      <div className="grid gap-4 lg:grid-cols-3 mb-4">
+        <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+          <p className="text-[10px] uppercase tracking-[0.25em] font-black text-slate-400">Service Interest</p>
+          <p className="mt-3 text-2xl font-black text-slate-900">{registrations.length}</p>
+          <p className="text-sm text-slate-500 mt-1">Total registrations across all services</p>
+        </div>
+        <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+          <p className="text-[10px] uppercase tracking-[0.25em] font-black text-slate-400">Top clicked service</p>
+          <p className="mt-3 text-2xl font-black text-blue-600">{mostPopularService}</p>
+          <p className="text-sm text-slate-500 mt-1">Selected {mostPopularServiceCount} time{mostPopularServiceCount === 1 ? '' : 's'}</p>
+        </div>
+        <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+          <p className="text-[10px] uppercase tracking-[0.25em] font-black text-slate-400">Service types</p>
+          <p className="mt-3 text-2xl font-black text-slate-900">{totalServiceTypes}</p>
+          <p className="text-sm text-slate-500 mt-1">Different services selected by users</p>
         </div>
       </div>
 
