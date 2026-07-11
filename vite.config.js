@@ -1,0 +1,46 @@
+import { defineConfig } from 'vite'
+import { fileURLToPath } from 'node:url'
+import react from '@vitejs/plugin-react'
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  resolve: {
+    alias: {
+      'fast-png': fileURLToPath(new URL('./src/shims/fast-png.js', import.meta.url)),
+    },
+  },
+  plugins: [react()],
+  server: {
+    port: 3000,
+    open: true,
+    cors: true,
+    proxy: {
+      '/supabase': {
+        target: 'https://oohabvgbrzrewwrekkfy.supabase.co',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/supabase/, '')
+      }
+    }
+  },
+  build: {
+    outDir: 'dist',
+    // Code splitting for better performance
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split vendor libraries into separate chunks
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-ui': ['lucide-react', 'framer-motion'],
+        }
+      }
+    },
+    // Enable compression
+    minify: 'terser',
+    sourcemap: false,
+    chunkSizeWarningLimit: 1500,
+  },
+  // Optimize dependencies
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom', 'framer-motion', 'lucide-react'],
+  },
+})
