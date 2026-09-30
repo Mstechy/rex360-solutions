@@ -3,13 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 // Configuration
 const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://oohabvgbrzrewwrekkfy.supabase.co';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vaGFidmdicnpyZXd3cmVra2Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzODg1NjMsImV4cCI6MjA4MTk2NDU2M30.ybMOF5K1dp-mxxaSCtXGdWZd8t7z2jxClbNMkbIMzVE';
-const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
-
-if (!paystackSecret) {
-  console.error('❌ ERROR: PAYSTACK_SECRET_KEY is not set in environment variables.');
-  console.error('   Please set it before running this script.');
-  process.exit(1);
-}
+const verifyPaymentUrl = `${supabaseUrl}/functions/v1/verify-payment`;
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -17,27 +11,35 @@ async function verifyPaystackTransaction(reference) {
   console.log(`\n🔍 Verifying Paystack reference: ${reference}`);
   
   try {
-    const response = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
-      method: 'GET',
+    const response = await fetch(verifyPaymentUrl, {
+      method: 'POST',
       headers: {
-        Authorization: `Bearer ${paystackSecret}`,
-        Accept: 'application/json'
-      }
+        'Content-Type': 'application/json',
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`
+      },
+      body: JSON.stringify({ reference })
     });
 
-    const data = await response.json();
+    const raw = await response.text();
+    let data = {};
+    try {
+      data = raw ? JSON.parse(raw) : {};
+    } catch {
+      data = {};
+    }
     
     if (!response.ok) {
       console.error(`   ❌ Paystack API error:`, data);
       return { verified: false, error: data };
     }
 
-    if (!data?.data) {
+    if (!data?.verified) {
       console.error(`   ❌ No transaction data returned`);
       return { verified: false, error: 'No data' };
     }
 
-    const txn = data.data;
+    const txn = data.verified;
     console.log(`   ✅ Transaction found:`);
     console.log(`      Status: ${txn.status}`);
     console.log(`      Amount: ₦${(txn.amount / 100).toLocaleString()}`);
@@ -114,7 +116,7 @@ async function fetchAndVerifyRegistrations() {
 console.log('🔐 Old Payment Verification Tool');
 console.log('══════════════════════════════════\n');
 console.log(`Using Supabase: ${supabaseUrl}`);
-console.log(`Paystack Secret Key: ${paystackSecret.substring(0, 10)}...`);
+console.log(`Verify-payment Edge Function: ${verifyPaymentUrl}`);
 console.log('\n🚀 Starting verification...');
 
 fetchAndVerifyRegistrations();

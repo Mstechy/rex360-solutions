@@ -168,6 +168,7 @@ const RegistrationWizard = ({ preSelectedService = null }) => {
     hState: '',
     hLga: '',
     hStreet: '',
+    bName: '',
     bState: '',
     bLga: '',
     bStreet: '',
@@ -252,6 +253,94 @@ const RegistrationWizard = ({ preSelectedService = null }) => {
     }
   }, [preSelectedService, currentStep]);
 
+  // Scroll to top when the success step is shown.
+  // NOTE: this hook MUST stay at the top level of the component. Putting it
+  // inside `if (successStep)` changes the number of hooks between renders, so
+  // React throws "Rendered more hooks than during the previous render" the
+  // moment payment succeeds and successStep flips to true.
+  useEffect(() => {
+    if (successStep) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [successStep]);
+
+  // ⚠️ Paystack's own validator rejects async functions:
+  //     function isFunction(t){ if(!t) return !1; return t && "[object Function]" === {}.toString.call(t) }
+  // `Object.prototype.toString.call(async () => {})` returns "[object AsyncFunction]",
+  // not "[object Function]", so an `async` callback makes Paystack throw
+  //     "Error: Attribute callback must be a valid function"
+  // before the modal ever opens. Callbacks handed to Paystack MUST stay plain
+  // functions — they delegate the async work to this helper instead.
+  const runPaymentCallback = async (response, config) => {
+    const paystackRef = response.reference || config.reference;
+    setUploadStatus('uploading');
+
+    // Freeze the values we need NOW. The Paystack callback runs outside
+    // React's render cycle, and we are about to reset this state — so a later
+    // read of `formData`/`files` would already be empty.
+    const formValues = { ...formData };
+    const categoryValue = category;
+    const natureValue = nature;
+    const filesToUpload = files;
+    const priceAtPayment = currentPrice;
+
+    try {
+      // 1) Verify with Paystack through our server. The browser callback
+      //    alone is not trustworthy.
+      console.log('🔐 Verifying payment on server...', { paystackRef });
+      const verified = await verifyPaymentOnServer(paystackRef, config.amount);
+
+      // 2) Only now write to the database, using state (not the DOM).
+      const saved = await saveToDatabase({
+        paystackRef,
+        formValues,
+        categoryValue,
+        natureValue,
+        filesToUpload,
+      });
+
+      setPaymentReference(paystackRef);
+      setSubmissionSnapshot({
+        serviceType,
+        paymentReference: paystackRef,
+        amount: priceAtPayment,
+        category: categoryValue,
+        nature: natureValue,
+        fields: { ...formValues },
+        documentCounts: Object.fromEntries(
+          Object.entries(filesToUpload).map(([docType, items]) => [docType, Array.isArray(items) ? items.length : 0])
+        ),
+        submittedAt: new Date().toISOString(),
+      });
+
+      console.log('✅ Verified & saved:', verified.reference, saved?.[0]?.id);
+
+      // 3) Reset React state only. Blanking the DOM directly (the old
+      //    form.reset() / input.value = '' approach) desynchronised
+      //    controlled inputs from their state and reintroduced the
+      //    empty-value class of bug.
+      setFormData((prev) => Object.fromEntries(Object.keys(prev).map((k) => [k, k === 'gender' ? 'Male' : ''])));
+      setFiles({ "ID Card": [], "Signature": [], "Passport": [] });
+      setPreviews({ "ID Card": [], "Signature": [], "Passport": [] });
+      setCategory('');
+      setNature('');
+
+      setUploadStatus('success');
+      setSuccessStep(true);
+      setTimeout(() => {
+        navigate('/');
+      }, 5000);
+    } catch (err) {
+      console.error('❌ Error in payment callback:', err);
+      setUploadStatus('error');
+      alert(
+        `We could not complete your registration: ${err.message}\n\n` +
+        `Your payment reference is ${paystackRef}. Our team can confirm this manually — ` +
+        `contact support on WhatsApp: +234 904 834 9548`
+      );
+    }
+  };
+
   const handlePaystackPayment = (config) => {
     if (typeof window !== 'undefined' && window.PaystackPop) {
       const paystack = window.PaystackPop.setup({
@@ -264,66 +353,15 @@ const RegistrationWizard = ({ preSelectedService = null }) => {
         onClose: function() {
           console.log('⚠️ Payment onClose called');
           setUploadStatus(null);
-          alert("Payment not completed. Your registration was saved but payment is pending.");
+          alert("Payment was not completed. No registration was saved — please try again.");
         },
+        // Plain function on purpose — see the note above runPaymentCallback.
         callback: function(response) {
           console.log('✅ Payment callback called:', response);
-          setUploadStatus('uploading');
-          
-          // Process the successful payment
-          const paystackRef = response.reference || config.reference;
-          
-          // Save to database with payment reference
-          saveToDatabase(paystackRef)
-            .then(() => {
-              setPaymentReference(paystackRef);
-              setSubmissionSnapshot({
-                serviceType,
-                paymentReference: paystackRef,
-                amount: currentPrice,
-                category,
-                nature,
-                fields: { ...formData },
-                documentCounts: Object.fromEntries(
-                  Object.entries(files).map(([docType, items]) => [docType, Array.isArray(items) ? items.length : 0])
-                ),
-                submittedAt: new Date().toISOString(),
-              });
-
-              // Clear form after success
-              setFiles({ "ID Card": [], "Signature": [], "Passport": [] });
-              setPreviews({ "ID Card": [], "Signature": [], "Passport": [] });
-              setCategory('');
-              setNature('');
-              
-              const form = document.querySelector('form');
-              if (form) form.reset();
-              
-              document.querySelectorAll('input[type="text"]').forEach(input => input.value = '');
-              document.querySelectorAll('input[type="email"]').forEach(input => input.value = '');
-              document.querySelectorAll('input[type="date"]').forEach(input => input.value = '');
-              document.querySelectorAll('input[type="file"]').forEach(input => input.value = '');
-              document.querySelectorAll('textarea').forEach(ta => ta.value = '');
-              document.querySelectorAll('select').forEach(sel => sel.selectedIndex = 0);
-              
-              Object.values(previews).forEach(urls => {
-                urls.forEach(url => URL.revokeObjectURL(url));
-              });
-              
-              setUploadStatus('success');
-              setSuccessStep(true);
-              setTimeout(() => {
-                navigate('/');
-              }, 5000);
-            })
-            .catch((err) => {
-              console.error('❌ Error in payment callback:', err);
-              setUploadStatus('error');
-              alert(`Registration error: ${err.message}`);
-            });
+          runPaymentCallback(response, config);
         }
       });
-      
+
       paystack.openIframe();
     } else {
       console.log('⚠️ Paystack not loaded, loading script...');
@@ -380,128 +418,190 @@ const RegistrationWizard = ({ preSelectedService = null }) => {
     }
   };
 
-  // Save registration to database with payment verification
-  const saveToDatabase = async (paystackRef) => {
-    return new Promise(async (resolve, reject) => {
-      try {
-        // Get all form values
-        const allInputs = document.querySelectorAll('input, select, textarea');
-        const fullDetails = {};
-        allInputs.forEach(input => {
-          if(input.id && input.type !== 'file') {
-            fullDetails[input.id] = input.value;
-          }
-        });
+  // Confirm with Paystack through our own server before trusting the payment.
+  // The browser can be tampered with, so `payment_status: 'paid'` must never be
+  // written on the strength of the client callback alone.
+  //
+  // This hits a Supabase Edge Function, NOT a Vercel serverless function, so
+  // the Paystack SECRET key lives only in Supabase Edge Function secrets and
+  // is never committed or shipped to the browser. The anon key below is public
+  // by design — it authenticates the call to Functions, it does not on its own
+  // grant table access (RLS still applies to the insert that follows).
+  const VERIFY_PAYMENT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-payment`;
 
-        fullDetails['business_category'] = category;
-        fullDetails['business_nature'] = nature;
+  const verifyPaymentOnServer = async (reference, expectedAmountInKobo) => {
+    let response;
+    try {
+      response = await fetch(VERIFY_PAYMENT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ reference, amount: expectedAmountInKobo }),
+      });
+    } catch (networkError) {
+      // fetch() rejects BEFORE any HTTP status exists when the Edge Function
+      // isn't deployed (Supabase answers the preflight with NOT_FOUND), when
+      // CORS blocks the request, or when we're offline. The raw
+      // "TypeError: Failed to fetch" hides all of that, so translate it.
+      throw new Error(
+        `Could not reach the payment verification endpoint (${VERIFY_PAYMENT_URL}). ` +
+          `Most likely the verify-payment Edge Function is not deployed yet — ` +
+          `check Supabase Dashboard → Edge Functions. ` +
+          `Original error: ${networkError.message}`,
+      );
+    }
 
-        // Initialize document URLs object
-        const documentUrls = {};
+    // Read as text first: a 404/500 may return HTML (SPA fallback), and
+    // response.json() would then throw and mask the real HTTP status.
+    const text = await response.text();
+    let result = {};
+    try {
+      result = text ? JSON.parse(text) : {};
+    } catch {
+      result = {};
+    }
 
-        try {
-          // Prepare registration data with payment reference
-          const registrationData = {
-            service_type: serviceType,
-            surname: fullDetails['surname'],
-            firstname: fullDetails['firstname'],
-            phone: fullDetails['phone'],
-            email: fullDetails['email'],
-            amount: currentPrice || 0,
-            paystack_ref: paystackRef,
-            payment_status: 'paid',
-            full_details: {
-              ...fullDetails,
-              business_category: category,
-              business_nature: nature,
-              status: 'approved',
-              payment_reference: paystackRef,
-              // Keep both keys temporarily so records created during the
-              // transition remain readable in every admin export.
-              documents: documentUrls,
-              uploaded_docs: documentUrls
-            }
-          };
+    if (!response.ok) {
+      const detail = result?.error || result?.message;
+      throw new Error(
+        detail
+          ? `Payment verification failed: ${detail} (HTTP ${response.status})`
+          : `Payment verification failed: the server returned HTTP ${response.status} with no JSON body. ` +
+            `Check that the verify-payment Edge Function is deployed and PAYSTACK_SECRET_KEY ` +
+            `is set in Supabase Edge Function secrets.`
+      );
+    }
+    if (result?.verified?.status !== 'success') {
+      throw new Error('Your payment was not successful. Please try again.');
+    }
 
-          // Upload documents if any exist
-          
-          for (const key of Object.keys(files)) {
-            if (files[key].length === 0) {
-              documentUrls[key] = [];
-              continue;
-            }
-            
-            const uploadPromises = files[key].map(async (file, i) => {
-              try {
-                const timestamp = Date.now();
-                const randomStr = Math.random().toString(36).substring(7);
-                const fileExt = file.name.split('.').pop() || 'unknown';
-                const fileName = `${timestamp}_${i}_${randomStr}.${fileExt}`;
-                const path = `documents/${key}/${fileName}`;
-                
-                const { data: uploadData, error: uploadErr } = await supabase.storage
-                  .from('documents')
-                  .upload(path, file, { upsert: false });
-                
-                if (uploadErr) throw new Error(`Failed to upload ${key}: ${uploadErr.message}`);
-                
-                const { data: urlData } = supabase.storage
-                  .from('documents')
-                  .getPublicUrl(path);
-                
-                if (!urlData || !urlData.publicUrl) {
-                  throw new Error(`Could not get public URL for ${path}`);
-                }
-                
-                return urlData.publicUrl;
-              } catch (fileErr) {
-                throw fileErr;
-              }
-            });
-            
-            try {
-              const uploadedUrls = await Promise.all(uploadPromises);
-              documentUrls[key] = uploadedUrls;
-            } catch (uploadErr) {
-              throw new Error(`Document upload failed for ${key}: ${uploadErr.message}`);
-            }
-          }
+    return result.verified;
+  };
 
-          // Update registration data with document URLs
-          registrationData.full_details.documents = documentUrls;
-          registrationData.full_details.uploaded_docs = documentUrls;
+  // Save the registration. Every value is read from React state passed in
+  // explicitly — NEVER from document.querySelectorAll. The wizard only mounts
+  // the active step, so by the time payment completes (step 6) the step 2
+  // inputs no longer exist in the DOM. A DOM scrape therefore returns
+  // undefined, which violates the NOT NULL columns and loses the record while
+  // the customer has already been charged.
+  const saveToDatabase = async ({ paystackRef, formValues, categoryValue, natureValue, filesToUpload }) => {
+    try {
+      const fullDetails = {
+        surname: formValues.surname || '',
+        firstname: formValues.firstname || '',
+        othername: formValues.othername || '',
+        dob: formValues.dob || '',
+        gender: formValues.gender || '',
+        nin: formValues.nin || '',
+        email: formValues.email || '',
+        phone: formValues.phone || '',
+        'h-state': formValues.hState || '',
+        'h-lga': formValues.hLga || '',
+        'h-street': formValues.hStreet || '',
+        'biz-name': formValues.bName || '',
+        business_category: categoryValue || '',
+        business_nature: natureValue || '',
+        status: 'approved',
+        payment_reference: paystackRef,
+      };
 
-          // Add service-specific fields
-          if (serviceType === 'NGO Registration') {
-            registrationData['ngo_name'] = fullDetails['ngo-name1'];
-            registrationData['ngo_tenure'] = fullDetails['ngo-tenure'];
-            registrationData['ngo_address'] = fullDetails['ngo-address'];
-            registrationData['ngo_aim1'] = fullDetails['ngo-aim1'];
-            registrationData['ngo_aim2'] = fullDetails['ngo-aim2'];
-          }
-
-          // Save to Supabase
-          const { data: rawData, error: dbError } = await supabase
-            .from('registrations')
-            .insert([registrationData])
-            .select();
-
-          if (dbError) {
-            console.error('Database error:', dbError);
-            throw new Error(`Database error: ${dbError.message}`);
-          }
-
-          console.log('✅ Registration saved with payment:', rawData);
-          resolve();
-        } catch (uploadErr) {
-          console.error('Upload/Save error:', uploadErr);
-          reject(uploadErr);
-        }
-      } catch (err) {
-        console.error('Database error:', err);
-        reject(err);
+      // Guard the NOT NULL columns up front so a failure is legible instead of
+      // surfacing as an opaque Postgres constraint violation.
+      const missing = ['surname', 'firstname', 'phone', 'email'].filter((k) => !fullDetails[k].trim());
+      if (missing.length) {
+        throw new Error(`Missing required information: ${missing.join(', ')}. Please restart the form.`);
       }
-    });
+
+      // Initialize document URLs object
+      const documentUrls = {};
+
+      try {
+        // Prepare registration data with payment reference
+        const registrationData = {
+          service_type: serviceType,
+          surname: fullDetails.surname.trim(),
+          firstname: fullDetails.firstname.trim(),
+          phone: fullDetails.phone.trim(),
+          email: fullDetails.email.trim(),
+          amount: currentPrice || 0,
+          paystack_ref: paystackRef,
+          payment_status: 'paid',
+          full_details: {
+            ...fullDetails,
+            // Keep both keys so records created during the transition remain
+            // readable in every admin export.
+            documents: documentUrls,
+            uploaded_docs: documentUrls
+          }
+        };
+
+        // Upload documents if any exist
+  
+        for (const key of Object.keys(filesToUpload)) {
+          if (!filesToUpload[key] || filesToUpload[key].length === 0) {
+            documentUrls[key] = [];
+            continue;
+          }
+
+          const uploadPromises = filesToUpload[key].map(async (file, i) => {
+            const timestamp = Date.now();
+            const randomStr = Math.random().toString(36).substring(7);
+            const fileExt = file.name.split('.').pop() || 'unknown';
+            const fileName = `${timestamp}_${i}_${randomStr}.${fileExt}`;
+            const path = `documents/${key}/${fileName}`;
+
+            const { error: uploadErr } = await supabase.storage
+              .from('documents')
+              .upload(path, file, { upsert: false });
+
+            if (uploadErr) throw new Error(`Failed to upload ${key}: ${uploadErr.message}`);
+
+            const { data: urlData } = supabase.storage
+              .from('documents')
+              .getPublicUrl(path);
+
+            if (!urlData || !urlData.publicUrl) {
+              throw new Error(`Could not get public URL for ${path}`);
+            }
+
+            return urlData.publicUrl;
+          });
+
+          try {
+            documentUrls[key] = await Promise.all(uploadPromises);
+          } catch (uploadErr) {
+            throw new Error(`Document upload failed for ${key}: ${uploadErr.message}`);
+          }
+        }
+
+        // Update registration data with document URLs
+        registrationData.full_details.documents = documentUrls;
+        registrationData.full_details.uploaded_docs = documentUrls;
+
+        // Save to Supabase
+        const { data: rawData, error: dbError } = await supabase
+          .from('registrations')
+          .insert([registrationData])
+          .select();
+
+        if (dbError) {
+          console.error('Database error:', dbError);
+          throw new Error(`Database error: ${dbError.message}`);
+        }
+
+        console.log('✅ Registration saved with payment:', rawData);
+        return rawData;
+      } catch (uploadErr) {
+        console.error('Upload/Save error:', uploadErr);
+        throw uploadErr;
+      }
+    } catch (err) {
+      console.error('Database error:', err);
+      throw err;
+    }
   };
 
   const handleFileChange = (e, docType) => {
@@ -537,7 +637,11 @@ const RegistrationWizard = ({ preSelectedService = null }) => {
       case 1:
         return serviceType !== '';
       case 2:
-        return formData.surname && formData.firstname && formData.email && formData.phone;
+        // The `required` HTML attribute never fires here because "Next" is a
+        // type="button" and we never submit the form, so enforce it manually.
+        return ['surname', 'firstname', 'email', 'phone', 'nin', 'dob'].every(
+          (f) => String(formData[f] || '').trim() !== ''
+        );
       case 3:
         return formData.hState && formData.hLga;
       case 4:
@@ -617,11 +721,6 @@ const RegistrationWizard = ({ preSelectedService = null }) => {
   }
 
   if (successStep) {
-    // Scroll to top when success step is shown
-    useEffect(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, []);
-
     return (
       <div className="pt-20 pb-20 px-8 text-center bg-white min-h-screen flex flex-col items-center justify-center">
         <div className="max-w-2xl">
@@ -753,17 +852,17 @@ const RegistrationWizard = ({ preSelectedService = null }) => {
                     </div>
                     <div>
                       <label htmlFor="othername" className="text-xs font-bold text-gray-700 uppercase block mb-2">Other Name</label>
-                      <input id="othername" autoComplete="additional-name" placeholder="Other Name" className="p-3 border border-gray-300 rounded-lg w-full" />
+                      <input id="othername" autoComplete="additional-name" placeholder="Other Name" className="p-3 border border-gray-300 rounded-lg w-full" value={formData.othername} onChange={(e) => handleInputChange('othername', e.target.value)} />
                     </div>
                     <div>
                       <label htmlFor="dob" className="text-xs font-bold text-gray-700 uppercase block mb-2">Date of Birth *</label>
-                      <input id="dob" type="date" autoComplete="bday" className="p-3 border border-gray-300 rounded-lg w-full" required />
+                      <input id="dob" type="date" autoComplete="bday" className="p-3 border border-gray-300 rounded-lg w-full" value={formData.dob} onChange={(e) => handleInputChange('dob', e.target.value)} required />
                     </div>
                     <div>
                       <label htmlFor="gender" className="text-xs font-bold text-gray-700 uppercase block mb-2">Gender</label>
-                      <select id="gender" autoComplete="sex" className="p-3 border border-gray-300 rounded-lg w-full">
-                        <option>Male</option>
-                        <option>Female</option>
+                      <select id="gender" autoComplete="sex" className="p-3 border border-gray-300 rounded-lg w-full" value={formData.gender} onChange={(e) => handleInputChange('gender', e.target.value)}>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
                       </select>
                     </div>
                     <div>
@@ -776,7 +875,7 @@ const RegistrationWizard = ({ preSelectedService = null }) => {
                     </div>
                     <div>
                       <label htmlFor="nin" className="text-xs font-bold text-gray-700 uppercase block mb-2">NIN *</label>
-                      <input id="nin" autoComplete="off" placeholder="NIN (11 Digits)" className="p-3 border border-gray-300 rounded-lg w-full" required />
+                      <input id="nin" autoComplete="off" placeholder="NIN (11 Digits)" className="p-3 border border-gray-300 rounded-lg w-full" value={formData.nin} onChange={(e) => handleInputChange('nin', e.target.value)} required />
                     </div>
                   </div>
                 </motion.div>
@@ -828,7 +927,7 @@ const RegistrationWizard = ({ preSelectedService = null }) => {
                   <div className="space-y-4">
                     <div>
                       <label htmlFor="biz-name" className="text-xs font-bold text-gray-700 uppercase block mb-2">Proposed Business Name</label>
-                      <input id="biz-name" placeholder="Proposed Business Name" className="p-3 border border-gray-300 rounded-lg w-full" />
+                      <input id="biz-name" placeholder="Proposed Business Name" className="p-3 border border-gray-300 rounded-lg w-full" value={formData.bName} onChange={(e) => handleInputChange('bName', e.target.value)} />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-gray-700 uppercase block mb-2">Nature of Business</label>

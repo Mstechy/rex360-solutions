@@ -34,7 +34,6 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard.jsx'));
 
 // 4. RESPONSIVE HOOKS
 import { useIsMobile, useIsDesktop, premiumEasings, pageTransitionVariants } from './hooks/useResponsiveMotion.js';
-import { useAutoScrollSections, enhancedAnimationVariants, useScrollAnimation } from './hooks/useEnhancedAnimations.js';
 import { trackSiteEvent } from './analytics.js';
 
 // Loading fallback component
@@ -144,8 +143,6 @@ function AppContent() {
                       initial={{ opacity: 0, y: isMobile ? 20 : 30 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ ...getAnimationSettings(0.4, 0.6, 0, 0) }}
-                      whileInView={{ ...enhancedAnimationVariants.parallax(-20) }}
-                      viewport={{ once: true }}
                     >
                       <HeroSlider />
                     </motion.div>
@@ -154,8 +151,6 @@ function AppContent() {
                       initial={{ opacity: 0, x: -getOffset() }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ ...getAnimationSettings(0.4, 0.8, 0.05, 0.1) }}
-                      whileInView={{ ...enhancedAnimationVariants.slideInRotate('left') }}
-                      viewport={{ once: true }}
                     >
                       <AgentIntro />
                     </motion.div>
@@ -164,8 +159,6 @@ function AppContent() {
                       initial={{ opacity: 0, y: isMobile ? 20 : 30 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ ...getAnimationSettings(0.4, 0.8, 0.1, 0.2) }}
-                      whileInView={{ ...enhancedAnimationVariants.fadeInUpBounce }}
-                      viewport={{ once: true }}
                     >
                       <ServicesSection />
                     </motion.div>
@@ -174,8 +167,6 @@ function AppContent() {
                       initial={{ opacity: 0, y: isMobile ? 20 : 30 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ ...getAnimationSettings(0.4, 0.8, 0.15, 0.25) }}
-                      whileInView={{ ...enhancedAnimationVariants.slideInRotate('right') }}
-                      viewport={{ once: true }}
                     >
                       <HowItWorks />
                     </motion.div>
@@ -184,8 +175,6 @@ function AppContent() {
                       initial={{ opacity: 0, y: isMobile ? 20 : 30 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ ...getAnimationSettings(0.4, 0.8, 0.2, 0.3) }}
-                      whileInView={{ ...enhancedAnimationVariants.scaleGlow }}
-                      viewport={{ once: true }}
                     >
                       <ProofOfDelivery />
                     </motion.div>
@@ -194,8 +183,6 @@ function AppContent() {
                       initial={{ opacity: 0, y: isMobile ? 20 : 30 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ ...getAnimationSettings(0.4, 0.8, 0.25, 0.35) }}
-                      whileInView={{ ...enhancedAnimationVariants.fadeInUpBounce }}
-                      viewport={{ once: true }}
                     >
                       <WhyChooseUs />
                     </motion.div>
@@ -204,8 +191,6 @@ function AppContent() {
                       initial={{ opacity: 0, y: isMobile ? 20 : 30 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ ...getAnimationSettings(0.4, 0.8, 0.2, 0.3) }}
-                      whileInView={{ ...enhancedAnimationVariants.slideInRotate('left') }}
-                      viewport={{ once: true }}
                     >
                       <Testimonials />
                     </motion.div>
@@ -214,8 +199,6 @@ function AppContent() {
                       initial={{ opacity: 0, x: getOffset() }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ ...getAnimationSettings(0.4, 0.8, 0.2, 0.3) }}
-                      whileInView={{ ...enhancedAnimationVariants.parallax(30) }}
-                      viewport={{ once: true }}
                     >
                       <NewsSection />
                     </motion.div>
@@ -224,8 +207,6 @@ function AppContent() {
                       initial={{ opacity: 0, y: isMobile ? 20 : 30 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ ...getAnimationSettings(0.4, 0.8, 0.25, 0.4) }}
-                      whileInView={{ ...enhancedAnimationVariants.scaleGlow }}
-                      viewport={{ once: true }}
                     >
                       <FAQ />
                     </motion.div>
@@ -234,8 +215,6 @@ function AppContent() {
                       initial={{ opacity: 0, y: isMobile ? 20 : 30 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ ...getAnimationSettings(0.4, 0.8, 0.3, 0.45) }}
-                      whileInView={{ ...enhancedAnimationVariants.fadeInUpBounce }}
-                      viewport={{ once: true }}
                     >
                       <LegitimacyHub />
                     </motion.div>
@@ -243,8 +222,6 @@ function AppContent() {
                       initial={{ opacity: 0, scale: isMobile ? 0.95 : 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ ...getAnimationSettings(0.4, 0.8, 0.35, 0.5) }}
-                      whileInView={{ ...enhancedAnimationVariants.magnetic }}
-                      viewport={{ once: true }}
                     >
                       <div className="w-full flex justify-center items-center py-16 bg-white">
                          <NigeriaSymbol />

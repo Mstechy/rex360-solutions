@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Edit3, Trash2, Camera, DollarSign, Newspaper, Layout,
-  Check, Loader, Image as ImageIcon, X, FileText, Eye, Menu, TrendingUp
+  Check, Loader, Image as ImageIcon, X, FileText, Eye, Menu, TrendingUp, LogOut
 } from 'lucide-react';
 import JSZip from 'jszip';
 import { supabase } from '../SupabaseClient';
@@ -957,6 +958,7 @@ const AssetsManager = ({ assets, fetchData, handleUpload, uploadingId }) => {
 
 //  MAIN ADMIN DASHBOARD
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('orders');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -964,8 +966,36 @@ const AdminDashboard = () => {
   const [data, setData] = useState({ registrations: [], services: [], news: [], slides: [], assets: [] });
   const [connectionStatus, setConnectionStatus] = useState('connecting'); // connecting, connected, error
   const [errorMsg, setErrorMsg] = useState('');
+  const [authChecked, setAuthChecked] = useState(false);
+  const [adminEmail, setAdminEmail] = useState('');
 
-  useEffect(() => { fetchData(); }, []);
+  // Auth gate. The registrations SELECT is protected by RLS policies that only
+  // admit the `authenticated` role, so the query MUST run inside a real
+  // Supabase session. Without this guard the request goes out as `anon` and
+  // PostgREST returns 200 with an empty array — a silent, error-free failure.
+  useEffect(() => {
+    const { data: authData } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        setAuthChecked(true);
+        navigate('/admin', { replace: true });
+        return;
+      }
+
+      setAdminEmail(session.user?.email || '');
+      setAuthChecked(true);
+
+      // Defer the fetch out of the auth callback to avoid a deadlock with
+      // Supabase's internal auth lock.
+      setTimeout(fetchData, 0);
+    });
+
+    return () => authData.subscription.unsubscribe();
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/admin', { replace: true });
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -1106,6 +1136,19 @@ const AdminDashboard = () => {
     }
   };
 
+  // Hold the render until we know whether a valid session exists, so we never
+  // render an empty dashboard and mistake it for "no clients yet".
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex items-center gap-3 text-slate-600">
+          <Loader className="animate-spin text-blue-600" size={24} />
+          <span className="font-bold">Verifying admin session…</span>
+        </div>
+      </div>
+    );
+  }
+
   const tabs = [
     { id: 'orders', icon: <FileText size={18}/>, label: 'Orders' },
     { id: 'revenue', icon: <TrendingUp size={18}/>, label: 'Revenue' },
@@ -1175,10 +1218,32 @@ const AdminDashboard = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {adminEmail && (
+                <span className="hidden lg:inline text-xs font-bold text-slate-500 truncate max-w-[180px]">{adminEmail}</span>
+              )}
               {loading && <Loader className="animate-spin text-green-600" size={18} />}
               <button onClick={fetchData} className="text-xs font-bold text-blue-600 hover:text-blue-800 px-2 py-1 bg-blue-50 rounded hover:bg-blue-100 transition-all">🔄 Refresh</button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1 text-xs font-bold text-red-600 hover:text-red-800 px-2 py-1 bg-red-50 rounded hover:bg-red-100 transition-all"
+                title="Sign out"
+              >
+                <LogOut size={13} /> Logout
+              </button>
             </div>
           </header>
+
+          {connectionStatus === 'connected' && data.registrations.length === 0 && (
+            <div className="mb-4 p-3 bg-amber-50 border-l-4 border-amber-500 rounded-lg">
+              <p className="text-sm font-bold text-amber-800">⚠️ Connected, but 0 registrations returned</p>
+              <p className="text-xs text-amber-700 mt-1">
+                You are signed in as <strong>{adminEmail || 'unknown'}</strong>, so this is not an auth problem. Either no
+                customer has completed payment yet, or the RLS SELECT policies are filtering every row. Check the
+                <code className="mx-1 px-1 bg-amber-100 rounded">registrations</code> table directly in the Supabase SQL
+                editor to confirm rows exist.
+              </p>
+            </div>
+          )}
 
           {activeTab === 'orders' && <OrdersManager registrations={data.registrations} fetchData={fetchData} />}
           {activeTab === 'revenue' && <RevenueManager registrations={data.registrations} />}

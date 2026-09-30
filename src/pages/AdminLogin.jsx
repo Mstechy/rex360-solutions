@@ -1,20 +1,49 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, User, ShieldAlert } from 'lucide-react';
+import { Lock, User, ShieldAlert, Loader, AlertCircle } from 'lucide-react';
+import { supabase } from '../SupabaseClient';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  // If a valid session already exists, skip straight to the dashboard.
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (active && data?.session) {
+        navigate('/admin/dashboard', { replace: true });
+      }
+    });
+    return () => { active = false; };
+  }, [navigate]);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // Simple check - in a real app, this connects to a database
-    if (email === "info@rex360solutions.com" && password === "RexSemovita@12") {
-      navigate('/admin/dashboard');
-    } else {
-      alert("Unauthorized Access Detected");
+    setError('');
+    setLoading(true);
+
+    // A real Supabase session is REQUIRED here. The dashboard reads the
+    // registrations table through RLS policies that only admit the
+    // `authenticated` role, so a fake client-side check would leave the
+    // query running as `anon` and silently return zero rows.
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+
+    setLoading(false);
+
+    if (authError) {
+      // Deliberately vague: never reveal whether the email exists.
+      setError('Invalid email or password.');
+      return;
     }
+
+    navigate('/admin/dashboard', { replace: true });
   };
 
   return (
@@ -27,12 +56,21 @@ const AdminLogin = () => {
         </div>
         
         <form onSubmit={handleLogin} className="p-8 space-y-6">
+          {error && (
+            <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl" role="alert">
+              <AlertCircle size={18} className="text-red-600 shrink-0 mt-0.5" />
+              <p className="text-sm font-bold text-red-700">{error}</p>
+            </div>
+          )}
+
           <div className="space-y-2">
-            <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Admin Email</label>
+            <label htmlFor="admin-email" className="text-xs font-black text-slate-500 uppercase tracking-widest">Admin Email</label>
             <div className="relative">
               <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
               <input 
-                type="email" 
+                id="admin-email"
+                type="email"
+                autoComplete="username" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-cac-blue font-bold text-slate-700" 
@@ -44,11 +82,13 @@ const AdminLogin = () => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Secret Password</label>
+            <label htmlFor="admin-password" className="text-xs font-black text-slate-500 uppercase tracking-widest">Secret Password</label>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
               <input 
-                type="password" 
+                id="admin-password"
+                type="password"
+                autoComplete="current-password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-cac-blue font-bold text-slate-700" 
@@ -58,8 +98,18 @@ const AdminLogin = () => {
             </div>
           </div>
 
-          <button type="submit" className="w-full bg-cac-blue text-white py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-cac-green transition-all shadow-xl active:scale-95">
-            Access Dashboard
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full bg-cac-blue text-white py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-cac-green transition-all shadow-xl active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <Loader size={18} className="animate-spin" /> Verifying...
+              </>
+            ) : (
+              'Access Dashboard'
+            )}
           </button>
         </form>
       </div>

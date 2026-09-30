@@ -69,7 +69,7 @@ const HeroSlider = () => {
               alt="REX360 Solutions Background"
               className="w-full h-full object-cover scale-105"
               loading="eager"
-              fetchPriority="high"
+              fetchpriority="high"
               width="1600"
               height="900"
               decoding="async"
@@ -124,7 +124,7 @@ const HeroSlider = () => {
                 alt={slide.title || `Slide ${index + 1}: ${slide.subtitle || 'REX360 Solutions service'}`}
                 className="w-full h-full object-cover scale-105"
                 loading={index === 0 ? "eager" : "lazy"}
-                fetchPriority={index === 0 ? "high" : "auto"}
+                fetchpriority={index === 0 ? "high" : "auto"}
                 width="1600"
                 height="900"
                 decoding="async"

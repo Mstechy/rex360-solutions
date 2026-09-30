@@ -335,13 +335,18 @@ const Registration = () => {
     }
 
     try {
-      const response = await fetch('/api/verify-payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ reference, amount: expectedAmount })
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-payment`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          },
+          body: JSON.stringify({ reference, amount: expectedAmount })
+        }
+      );
 
       const result = await response.json();
       if (!response.ok) {
@@ -358,6 +363,17 @@ const Registration = () => {
       setPaymentReference(reference);
       return result.verified;
     } catch (err) {
+      // fetch() rejecting means we never got an HTTP status: function not
+      // deployed, CORS blocked, or offline. Surface something actionable.
+      if (err instanceof TypeError && /fetch|network/i.test(err.message)) {
+        const translated = new Error(
+          `Could not reach the payment verification endpoint. ` +
+            `The verify-payment Edge Function is probably not deployed yet — ` +
+            `check Supabase Dashboard → Edge Functions. (${err.message})`,
+        );
+        console.error('💥 verifyPaymentOnServer error:', translated);
+        throw translated;
+      }
       console.error('💥 verifyPaymentOnServer error:', err);
       throw err;
     }
