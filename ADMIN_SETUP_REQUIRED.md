@@ -12,13 +12,47 @@ The admin no longer uses a hardcoded password. It signs in with Supabase Auth,
 so a real user must exist.
 
 1. Go to **Supabase Dashboard → Authentication → Users → Add user**
-2. Email: `info@rex360solutions.com`
+2. Email: the admin's own address. **Do not write it into this repo** — see the
+   note below.
 3. Click **Create user**, then set the password to your chosen admin password.
-   (Or tick "Auto Confirm User" so no confirmation email is needed.)
-4. Keep this password in a password manager — the old hardcoded admin password
+4. **Tick "Auto Confirm User".** This project has `mailer_autoconfirm: false`,
+   so a user created without that box ticked *cannot* sign in — you get
+   `email_not_confirmed` instead of a session.
+5. Keep this password in a password manager — the old hardcoded admin password
    is no longer accepted anywhere.
 
-> Use this same email when logging in at `/admin`.
+> ## Log in at `/admin` with the exact email you entered in step 2
+>
+> ### Keep the admin email out of the repo
+>
+> There is exactly **one** admin account, so its email address is half of the
+> credential. Do not commit it — not here, not in `.env`, not in a code comment,
+> and not in the login form's `placeholder`. Anyone who learns the address can
+> target that mailbox directly. It can always be read back from
+> **Authentication → Users**, so it is never needed in code.
+>
+> ### If sign-in fails, check the email before the password
+>
+> A **wrong email and a wrong password return byte-identical errors**:
+>
+> ```
+> {"code":400,"error_code":"invalid_credentials","msg":"Invalid login credentials"}
+> ```
+>
+> Supabase returns this same response for an address that does not exist at all,
+> which is deliberate (it prevents account enumeration). So a typo in the email
+> is indistinguishable from a bad password, and the login form cannot tell you
+> which is wrong.
+>
+> **Always confirm the email in Authentication → Users first.** The placeholder
+> on the login form deliberately reads `Enter admin email` rather than an example
+> address, precisely so it cannot send you chasing a password problem that does
+> not exist.
+>
+> Also note `disable_signup` is `false` on this project, so anyone who reaches
+> the auth endpoint can create accounts. The admin dashboard is protected by RLS
+> and `authenticated` role, not by the absence of signup — keep that in mind
+> before loosening any policy.
 
 ---
 

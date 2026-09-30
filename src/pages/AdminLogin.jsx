@@ -38,7 +38,16 @@ const AdminLogin = () => {
     setLoading(false);
 
     if (authError) {
-      // Deliberately vague: never reveal whether the email exists.
+      // Keep the on-screen copy deliberately vague (never disclose whether the
+      // email exists), but surface the REAL Supabase code in devtools — the
+      // two cases look identical to the user and are very different fixes:
+      //   invalid_credentials -> no such Auth user, OR wrong password
+      //   email_not_confirmed -> user exists but was never confirmed
+      //   over_request_rate_limit / provider_* -> Supabase-side config
+      console.error(
+        '[admin-login] Supabase rejected sign-in:',
+        JSON.stringify({ status: authError.status, code: authError.code, message: authError.message })
+      );
       setError('Invalid email or password.');
       return;
     }
@@ -74,8 +83,10 @@ const AdminLogin = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-cac-blue font-bold text-slate-700" 
-                /* Updated Placeholder to be generic */
-                placeholder="admin@company.com" 
+                /* Neutral on purpose: a fake example address here (the old
+                   "admin@company.com") reads like a real login and sends people
+                   chasing a password problem when the email is what's wrong. */
+                placeholder="Enter admin email" 
                 required
               />
             </div>
