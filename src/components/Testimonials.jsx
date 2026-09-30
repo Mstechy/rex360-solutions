@@ -11,7 +11,7 @@ const testimonials = [
     location: "Lagos, Nigeria",
     stars: 5,
     text: "Rex360 Solutions made my CAC registration so easy! Got my certificate within 3 days. Highly recommended!",
-    image: "/testmo1.png"
+    image: "/testmo1.webp"
   },
   {
     name: "Emmanuel Okafor",
@@ -20,7 +20,7 @@ const testimonials = [
     location: "Abuja, Nigeria",
     stars: 5,
     text: "Professional service from start to finish. They handled everything including tax clearance. Will use again!",
-    image: "/testmo2.png"
+    image: "/testmo2.webp"
   },
   {
     name: "Adaeze Okonkwo",
@@ -29,7 +29,7 @@ const testimonials = [
     location: "Port Harcourt, Nigeria",
     stars: 5,
     text: "Excellent team! They registered my NGO and got approval within weeks. Very knowledgeable about Nigerian laws.",
-    image: "/testmo3.png"
+    image: "/testmo3.webp"
   },
   {
     name: "Oluwaseun Adeyemi",
@@ -38,7 +38,7 @@ const testimonials = [
     location: "Ibadan, Nigeria",
     stars: 5,
     text: "Fast, reliable, and affordable. They guided me through the entire process. My business is now legal!",
-    image: "/testmo4.png"
+    image: "/testmo4.webp"
   },
   {
     name: "Folake Williams",
@@ -47,7 +47,7 @@ const testimonials = [
     location: "Lagos, Nigeria",
     stars: 5,
     text: "Outstanding service! The team is very professional and responsive. They made company registration stress-free.",
-    image: "/testmo5.png"
+    image: "/testmo5.webp"
   },
   {
     name: "Michael Ibrahim",
@@ -56,7 +56,7 @@ const testimonials = [
     location: "Kano, Nigeria",
     stars: 5,
     text: "Best registration service in Nigeria! They handled our incorporation perfectly. Thank you Rex360!",
-    image: "/testmo1.png"
+    image: "/testmo1.webp"
   }
 ];
 

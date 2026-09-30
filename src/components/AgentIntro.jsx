@@ -77,6 +77,8 @@ const AgentIntro = () => {
                   src={agentImage}
                   alt="Doris Yuenva Benson"
                   className="w-full h-full object-cover transform transition-transform duration-1000 hover:scale-110 grayscale-0 hover:grayscale-0"
+                  loading="lazy"
+                  decoding="async"
                 />
               )}
             </div>

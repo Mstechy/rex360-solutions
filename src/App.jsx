@@ -130,7 +130,7 @@ function AppContent() {
               {/* HOME ROUTE */}
               <Route path="/" element={
                 <motion.div
-                  initial={{ opacity: 0, y: isMobile ? 15 : 20 }}
+                  initial={{ y: isMobile ? 15 : 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: isMobile ? -15 : -20 }}
                   transition={{ duration: isMobile ? 0.3 : 0.5, ease: premiumEasings.elegant }}
@@ -140,7 +140,7 @@ function AppContent() {
 
                     <motion.div
                       id="hero-slider"
-                      initial={{ opacity: 0, y: isMobile ? 20 : 30 }}
+                      initial={{ y: isMobile ? 20 : 30 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ ...getAnimationSettings(0.4, 0.6, 0, 0) }}
                     >

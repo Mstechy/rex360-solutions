@@ -75,15 +75,21 @@
   }
   </script>
 
-  <!-- Performance & Security -->
-  <link rel="dns-prefetch" href="//fonts.googleapis.com">
-  <link rel="dns-prefetch" href="//oohabvgbrzrewwrekkfy.supabase.co">
-  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
-  <link rel="preconnect" href="https://oohabvgbrzrewwrekkfy.supabase.co" crossorigin>
+  <!-- Performance: only hint origins that are actually requested.
+       (fonts.googleapis.com is intentionally NOT hinted — no webfont is ever
+       loaded by this site, so a preconnect there opens a connection nobody
+       uses and delays the connection that IS used.) -->
+  <link rel="preconnect" href="https://oohabvgbrzrewwrekkfy.supabase.co">
 
-  <!-- Preload critical resources -->
-  <link rel="preload" href="/src/index.css" as="style">
-  <link rel="preload" href="/src/main.jsx" as="script">
+  <!-- LCP: the hero image is rendered by React after JS boots, so without this
+       hint its download would not start until the bundle has been parsed.
+       type= lets browsers that lack WebP skip this and fetch the JPEG instead. -->
+  <link rel="preload" as="image" href="/newsimage.webp" type="image/webp" fetchpriority="high">
+
+  <!-- NOTE: do NOT hand-write preload/modulepreload for /src/*.jsx or /src/*.css.
+       Vite rewrites those into /assets/*.js + /assets/*.css at build time and
+       emits its own <link rel="modulepreload"> tags for the real chunk graph;
+       a hand-written one survives only as a useless data: URL. See dist/index.html. -->
 
   <!-- Favicon -->
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -91,7 +97,6 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
   <link rel="manifest" href="/site.webmanifest">
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
 
   <!-- Canonical URL -->
   <link rel="canonical" href="https://rex360solutions.com/">

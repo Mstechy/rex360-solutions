@@ -64,20 +64,22 @@ const HeroSlider = () => {
         {/* Fallback background when no slides are available */}
         {slides.length === 0 && (
           <div className="absolute inset-0">
-            <img
-              src="/newsimage.png.jpg"
-              alt="REX360 Solutions Background"
-              className="w-full h-full object-cover scale-105"
-              loading="eager"
-              fetchpriority="high"
-              width="1600"
-              height="900"
-              decoding="async"
-              crossOrigin="anonymous"
-            />
+            <picture className="contents">
+              <source srcSet="/newsimage.webp" type="image/webp" />
+              <img
+                src="/newsimage.png.jpg"
+                alt="REX360 Solutions Background"
+                className="w-full h-full object-cover scale-105"
+                loading="eager"
+                fetchpriority="high"
+                width="1600"
+                height="1067"
+                decoding="async"
+              />
+            </picture>
             <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-black/60 flex flex-col items-center justify-center text-center p-4 sm:p-6 z-20">
               {/* Default content when no slides */}
-              <div className="mb-4 sm:mb-6 flex items-center justify-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 px-3 sm:px-4 py-1 sm:py-2 rounded-full">
+              <div className="mb-4 sm:mb-6 flex items-center justify-center gap-2 bg-white/15 border border-white/20 px-3 sm:px-4 py-1 sm:py-2 rounded-full">
                 <span className="relative flex h-2 w-2 sm:h-3 sm:w-3">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#008751] opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 sm:h-3 sm:w-3 bg-[#008751]"></span>
@@ -137,7 +139,7 @@ const HeroSlider = () => {
             <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-black/60 flex flex-col items-center justify-center text-center p-4 sm:p-6 z-20">
               
               {/* 3. THE BADGE: Compact and elegant */}
-              <div className="mb-4 sm:mb-6 flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 px-3 sm:px-4 py-1 sm:py-2 rounded-full">
+              <div className="mb-4 sm:mb-6 flex items-center gap-2 bg-white/15 border border-white/20 px-3 sm:px-4 py-1 sm:py-2 rounded-full">
                 <span className="relative flex h-2 w-2 sm:h-3 sm:w-3">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#008751] opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 sm:h-3 sm:w-3 bg-[#008751]"></span>
@@ -168,19 +170,19 @@ const HeroSlider = () => {
 
               {/* 6.5. KEY SERVICES PREVIEW: Improved mobile layout */}
               <div className="mt-6 sm:mt-8 grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4 max-w-2xl mx-auto px-4">
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-3 text-center">
+                <div className="bg-white/15 rounded-lg p-2 sm:p-3 text-center">
                   <div className="text-white font-bold text-xs sm:text-sm uppercase tracking-wide leading-tight">Business Name</div>
                   <div className="text-white/80 text-[10px] sm:text-xs">From ₦35,000</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-3 text-center">
+                <div className="bg-white/15 rounded-lg p-2 sm:p-3 text-center">
                   <div className="text-white font-bold text-xs sm:text-sm uppercase tracking-wide leading-tight">Company Reg</div>
                   <div className="text-white/80 text-[10px] sm:text-xs">From ₦150,000</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-3 text-center">
+                <div className="bg-white/15 rounded-lg p-2 sm:p-3 text-center">
                   <div className="text-white font-bold text-xs sm:text-sm uppercase tracking-wide leading-tight">Trademark</div>
                   <div className="text-white/80 text-[10px] sm:text-xs">From ₦50,000</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-3 text-center">
+                <div className="bg-white/15 rounded-lg p-2 sm:p-3 text-center">
                   <div className="text-white font-bold text-xs sm:text-sm uppercase tracking-wide leading-tight">NGO Reg</div>
                   <div className="text-white/80 text-[10px] sm:text-xs">From ₦200,000</div>
                 </div>

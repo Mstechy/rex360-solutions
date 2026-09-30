@@ -54,6 +54,8 @@ const NigeriaSymbol = () => {
                 src={sealImage}
                 alt="Strength of Nigeria"
                 className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110"
+                loading="lazy"
+                decoding="async"
                 onError={(e) => {
                   e.target.src = "/oat.png"; // Fallback if DB link breaks
                 }}

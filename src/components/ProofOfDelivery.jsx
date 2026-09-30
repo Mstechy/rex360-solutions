@@ -5,11 +5,11 @@ import { X, ZoomIn, ChevronLeft, ChevronRight, MessageCircle, ShieldCheck } from
 import { useIsMobile } from '../hooks/useResponsiveMotion';
 
 // Import your images
-import testmo1 from '/testmo1.png';
-import testmo2 from '/testmo2.png';
-import testmo3 from '/testmo3.png';
-import testmo4 from '/testmo4.png';
-import testmo5 from '/testmo5.png';
+import testmo1 from '/testmo1.webp';
+import testmo2 from '/testmo2.webp';
+import testmo3 from '/testmo3.webp';
+import testmo4 from '/testmo4.webp';
+import testmo5 from '/testmo5.webp';
 
 const deliveryProofs = [
   { id: 1, image: testmo1 },
@@ -161,6 +161,8 @@ const ProofOfDelivery = () => {
                       src={proof.image}
                       alt="Delivery Proof"
                       className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
                     />
 
                     {/* Premium Hover Overlay */}
